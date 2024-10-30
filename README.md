@@ -1,5 +1,3 @@
-# Configure OCI Provider for Terraform
+# OCI Cluster Infrastructure
 
-- Create API key for user which will be used by CircleCI and define oci provider in terraform file.
-- Specify 5 env variables in CircleCI which will be used by terraform oci provider.
-- Create config.yaml
+This terraform project creates infrastructure in OCI to spin up OCI cluster and installs NGINX Ingress Controller, Velero, Cert Manager and ArgoCD.
