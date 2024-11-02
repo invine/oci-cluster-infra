@@ -160,59 +160,6 @@ variable "k8s_services_cird" {
   default = "10.96.0.0/16"
 }
 
-variable "argocd_bootstrap_repo_name" {
-  default = "k8s-charts-repo"
-}
-
-variable "argocd_bootstrap_repo_url" {
-  default = "https://github.com/invine/k8s-charts"
-}
-
-variable "argocd_bootstrap_repo_app_path" {
-  default = "argocd-bootstrap/applications"
-}
-
-variable "argocd_bootstrap_repo_prj_path" {
-  default = "argocd-bootstrap/projects"
-}
-
-variable "argocd_bootstrap_repo_branch" {
-  default = "main"
-}
-
-variable "argocd_version" {
-  default = "7.6.11"
-}
-
-variable "lets_encrypt_issuer_name" {
-  default = "letsencrypt-staging"
-}
-
-variable "lets_encrypt_issuer_server" {
-  default = "https://acme-staging-v02.api.letsencrypt.org/directory"
-}
-
-variable "lets_encrypt_email" {
-  description = "Email for Let's Encrypt service"
-}
-
-variable "velero_backup_bucket_name" {
-  default = "k8s-velero-backup"
-}
-
-variable "velero_backup_bucket_namespace" {
-  description = "Oracle Cloud Tenancy"
-}
-
-variable "velero_backup_bucket_prefix" {
-  description = "Prefix in backup bucket"
-  default     = ""
-}
-
-variable "velero_aws_plugin_image" {
-  default = "velero/velero-plugin-for-aws:v1.8.2"
-}
-
 variable "duckdns_subdomain" {
   description = "DuckDNS Subdomain"
 }

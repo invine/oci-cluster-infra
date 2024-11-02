@@ -10,14 +10,6 @@ resource "helm_release" "nginx_ingress" {
   repository = "https://helm.nginx.com/stable"
   chart      = "nginx-ingress"
 
-  # values = [
-  #   <<EOF
-  # controller:
-  #   service:
-  #     type: ClusterIP
-  # EOF
-  # ]
-
   values = [
     <<EOF
   controller:
@@ -47,8 +39,4 @@ data "kubernetes_service" "nginx_ingress_controller" {
     name      = "nginx-ingress-controller"
     namespace = helm_release.nginx_ingress.namespace
   }
-
-  depends_on = [
-    helm_release.nginx_ingress
-  ]
 }

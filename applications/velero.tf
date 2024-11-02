@@ -8,10 +8,6 @@ resource "kubernetes_namespace" "velero" {
   metadata {
     name = "velero"
   }
-  depends_on = [
-    oci_containerengine_cluster.k8s_cluster,
-    local_file.k8s_cluster_kube_config_file
-  ]
 }
 
 # Helm chart to install Velero
@@ -52,9 +48,5 @@ credentials:
       aws_access_key_id = ${oci_identity_customer_secret_key.velero_access_key.id}
       aws_secret_access_key = ${oci_identity_customer_secret_key.velero_access_key.key}
     EOF
-  ]
-
-  depends_on = [
-    kubernetes_namespace.velero
   ]
 }

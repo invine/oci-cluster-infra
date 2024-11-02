@@ -12,8 +12,7 @@ resource "helm_release" "argocd" {
   name       = "argocd"
   repository = "https://argoproj.github.io/argo-helm"
   chart      = "argo-cd"
-  # version    = var.argocd_version
-  namespace = kubernetes_namespace.argocd.metadata[0].name
+  namespace  = kubernetes_namespace.argocd.metadata[0].name
 
   values = [
     <<EOF
@@ -30,15 +29,6 @@ resource "helm_release" "argocd" {
         acme.cert-manager.io/http01-edit-in-place: "true" # important to merge with existing ingress resource into a single nginx config file
         cert-manager.io/cluster-issuer: ${var.lets_encrypt_issuer_name}
   EOF
-  ]
-
-  depends_on = [
-    oci_containerengine_cluster.k8s_cluster,
-    local_file.k8s_cluster_kube_config_file,
-    kubernetes_namespace.argocd,
-    oci_containerengine_node_pool.oke-node-pool,
-    helm_release.nginx_ingress,
-    kubectl_manifest.letsencrypt_issuer
   ]
 }
 
@@ -60,8 +50,8 @@ resource "kubernetes_secret" "argocd_repo_secret" {
   type = "Opaque"
 }
 
-resource "kubectl_manifest" "argocd_bootstrap_applications" {
-  yaml_body = <<YAML
+resource "kubernetes_manifest" "argocd_bootstrap_applications" {
+  manifest = yamldecode(<<EOF
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -80,12 +70,8 @@ spec:
     automated:
       prune: true
       selfHeal: true
-YAML
-  depends_on = [
-    kubernetes_namespace.argocd,
-    helm_release.argocd,
-    kubernetes_secret.argocd_repo_secret
-  ]
+EOF
+  )
 }
 
 data "kubernetes_secret" "argocd_admin_secret" {
@@ -93,7 +79,4 @@ data "kubernetes_secret" "argocd_admin_secret" {
     name      = "argocd-initial-admin-secret"
     namespace = kubernetes_namespace.argocd.metadata[0].name
   }
-  depends_on = [
-    helm_release.argocd
-  ]
 }
