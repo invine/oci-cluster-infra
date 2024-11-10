@@ -17,8 +17,8 @@ resource "kubernetes_namespace" "cert_manager" {
 }
 
 # Define a ClusterIssuer for Let's Encrypt Staging
-resource "kubernetes_manifest" "letsencrypt_issuer" {
-  manifest = yamldecode(<<EOF
+resource "kubectl_manifest" "letsencrypt_issuer" {
+  yaml_body  = <<EOF
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
@@ -34,5 +34,5 @@ spec:
           ingress:
             ingressClassName: nginx # Update with your ingress class
   EOF
-  )
+  depends_on = [helm_release.cert_manager]
 }

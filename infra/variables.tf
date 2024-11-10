@@ -118,7 +118,7 @@ variable "pool_name" {
 
 variable "node_pool_size" {
   description = "Size of node pool"
-  default     = 2
+  default     = 3
 }
 
 variable "worker_node_shape" {

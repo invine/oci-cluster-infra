@@ -23,5 +23,3 @@ provider "oci" {
 provider "kubernetes" {
   config_path = local_file.k8s_cluster_kube_config_file.filename
 }
-
-provider "null" {}

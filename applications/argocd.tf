@@ -2,10 +2,6 @@ resource "kubernetes_namespace" "argocd" {
   metadata {
     name = "argocd"
   }
-  depends_on = [
-    oci_containerengine_cluster.k8s_cluster,
-    local_file.k8s_cluster_kube_config_file
-  ]
 }
 
 resource "helm_release" "argocd" {
@@ -48,10 +44,15 @@ resource "kubernetes_secret" "argocd_repo_secret" {
   }
 
   type = "Opaque"
+
+  depends_on = [
+    helm_release.argocd,
+    kubectl_manifest.letsencrypt_issuer
+  ]
 }
 
-resource "kubernetes_manifest" "argocd_bootstrap_applications" {
-  manifest = yamldecode(<<EOF
+resource "kubectl_manifest" "argocd_bootstrap_applications" {
+  yaml_body  = <<EOF
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -71,7 +72,7 @@ spec:
       prune: true
       selfHeal: true
 EOF
-  )
+  depends_on = [helm_release.argocd]
 }
 
 data "kubernetes_secret" "argocd_admin_secret" {
@@ -79,4 +80,5 @@ data "kubernetes_secret" "argocd_admin_secret" {
     name      = "argocd-initial-admin-secret"
     namespace = kubernetes_namespace.argocd.metadata[0].name
   }
+  depends_on = [kubernetes_secret.argocd_repo_secret]
 }

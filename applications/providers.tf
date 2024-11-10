@@ -9,10 +9,15 @@ terraform {
       source  = "hashicorp/helm"
       version = ">= 2.16.1"
     }
+
+    kubectl = {
+      source  = "gavinbunney/kubectl"
+      version = ">= 1.7.0"
+    }
   }
 
   backend "local" {
-    path = "../terraform.tfstate"
+    path = "./terraform.tfstate"
   }
 }
 
@@ -23,7 +28,7 @@ provider "helm" {
 }
 
 provider "kubernetes" {
-  config_path = local_file.k8s_cluster_kube_config_file.filename
+  config_path = var.kubeconfig_path
 }
 
 provider "oci" {
@@ -32,4 +37,10 @@ provider "oci" {
   fingerprint      = var.fingerprint
   private_key_path = var.private_key_path
   region           = var.region
+}
+
+provider "null" {}
+
+provider "kubectl" {
+  config_path = var.kubeconfig_path
 }

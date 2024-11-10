@@ -49,4 +49,18 @@ credentials:
       aws_secret_access_key = ${oci_identity_customer_secret_key.velero_access_key.key}
     EOF
   ]
+  depends_on = [kubernetes_secret.velero_repo_credentials]
+}
+
+resource "kubernetes_secret" "velero_repo_credentials" {
+  metadata {
+    name      = "velero-repo-credentials"
+    namespace = kubernetes_namespace.velero.metadata[0].name
+  }
+
+  data = {
+    repository-password = var.velero_repository_password
+  }
+
+  type = "Opaque"
 }

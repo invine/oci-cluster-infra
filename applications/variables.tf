@@ -85,6 +85,10 @@ variable "velero_aws_plugin_image" {
   default = "velero/velero-plugin-for-aws:v1.8.2"
 }
 
+variable "velero_repository_password" {
+  default = "static-passw0rd"
+}
+
 variable "duckdns_subdomain" {
   description = "DuckDNS Subdomain"
 }

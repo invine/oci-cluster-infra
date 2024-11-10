@@ -35,53 +35,72 @@ resource "oci_core_security_list" "private-security-list" {
     protocol    = "all"
     description = "Allow all incoming traffic from nodes"
   }
-
   ingress_security_rules {
     stateless   = false
-    source      = var.vcn_cidr
+    source      = "0.0.0.0/0"
     source_type = "CIDR_BLOCK"
-    # Get protocol numbers from https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml ICMP is 1  
-    protocol = "1"
-
-    # For ICMP type and code see: https://www.iana.org/assignments/icmp-parameters/icmp-parameters.xhtml
-    icmp_options {
-      type = 3
-    }
+    protocol    = "all"
+    description = "Allow all incoming traffic from nodes"
   }
 
-  ingress_security_rules {
-    stateless   = false
-    source      = var.public_subnet_cidr
-    source_type = "CIDR_BLOCK"
-    protocol    = "6"
-    tcp_options {
-      min = 10250
-      max = 10250
-    }
-  }
+  # ingress_security_rules {
+  #   stateless   = false
+  #   source      = var.vcn_cidr
+  #   source_type = "CIDR_BLOCK"
+  #   # Get protocol numbers from https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml ICMP is 1  
+  #   protocol = "1"
 
-  ingress_security_rules {
-    stateless   = false
-    source      = var.public_subnet_cidr
-    source_type = "CIDR_BLOCK"
-    protocol    = "6"
-    # protocol    = "all"
-    tcp_options {
-      min = 30000
-      max = 32767
-    }
-  }
+  #   # For ICMP type and code see: https://www.iana.org/assignments/icmp-parameters/icmp-parameters.xhtml
+  #   icmp_options {
+  #     type = 3
+  #   }
+  # }
 
-  ingress_security_rules {
-    stateless   = false
-    source      = var.public_subnet_cidr
-    source_type = "CIDR_BLOCK"
-    protocol    = "6"
-    # protocol    = "all"
-    tcp_options {
-      min = 10256
-      max = 10256
-    }
-  }
+  # ingress_security_rules {
+  #   stateless   = false
+  #   source      = var.public_subnet_cidr
+  #   source_type = "CIDR_BLOCK"
+  #   protocol    = "6"
+  #   tcp_options {
+  #     min = 10250
+  #     max = 10250
+  #   }
+  # }
+
+  # ingress_security_rules {
+  #   stateless   = false
+  #   source      = var.public_subnet_cidr
+  #   source_type = "CIDR_BLOCK"
+  #   protocol    = "6"
+  #   # protocol    = "all"
+  #   tcp_options {
+  #     min = 30000
+  #     max = 32767
+  #   }
+  # }
+
+  # ingress_security_rules {
+  #   stateless   = false
+  #   source      = var.public_subnet_cidr
+  #   source_type = "CIDR_BLOCK"
+  #   protocol    = "6"
+  #   # protocol    = "all"
+  #   tcp_options {
+  #     min = 10256
+  #     max = 10256
+  #   }
+  # }
+
+  # ingress_security_rules {
+  #   stateless   = false
+  #   source      = var.public_subnet_cidr
+  #   source_type = "CIDR_BLOCK"
+  #   protocol    = "6"
+  #   # protocol    = "all"
+  #   tcp_options {
+  #     min = 9500
+  #     max = 9503
+  #   }
+  # }
 
 }
