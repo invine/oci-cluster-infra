@@ -36,7 +36,8 @@ resource "oci_containerengine_node_pool" "oke-node-pool" {
   # Using image Oracle-Linux-7.x-<date>
   # Find image OCID for your region from https://docs.oracle.com/iaas/images/ 
   node_source_details {
-    image_id    = data.oci_containerengine_node_pool_option.k8s_node_pool_option.sources[0].image_id
+    # image_id    = data.oci_containerengine_node_pool_option.k8s_node_pool_option.sources[0].image_id
+    image_id    = local.oke_latest_image_id
     source_type = "IMAGE"
   }
 
@@ -65,4 +66,31 @@ data "oci_containerengine_node_pool_option" "k8s_node_pool_option" {
 
   #Optional
   compartment_id = oci_identity_compartment.k8s_compartment.id
+}
+
+locals {
+  # strip leading "v" if user passed "v1.33.1"
+  kube_ver_no_v = replace(var.kubernetes_version, "^v", "")
+
+  # All image "sources" OCI offers for this cluster
+  oke_sources = data.oci_containerengine_node_pool_option.k8s_node_pool_option.sources
+
+  # Only sources that match our cluster's K8s version in their name (e.g., "...-OKE-1.33.1-20250701")
+  oke_sources_for_ver = [
+    for s in local.oke_sources : s
+    if length(regexall("[-_]OKE-${local.kube_ver_no_v}", s.source_name)) > 0
+  ]
+
+  # Build a lookup of name -> id
+  oke_source_map = { for s in local.oke_sources_for_ver : s.source_name => s.image_id }
+
+  # Sort candidate names lexically (date suffix makes lexical == chronological)
+  oke_sorted_names = sort(keys(local.oke_source_map))
+
+  # Pick newest (last element) or fall back to the first overall source if no version match
+  oke_latest_image_id = (
+    length(local.oke_sorted_names) > 0 ?
+    lookup(local.oke_source_map, local.oke_sorted_names[length(local.oke_sorted_names) - 1]) :
+    local.oke_sources[0].image_id
+  )
 }
