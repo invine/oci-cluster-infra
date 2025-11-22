@@ -102,4 +102,16 @@ resource "oci_core_security_list" "public-security-list" {
     }
   }
 
+  ingress_security_rules {
+    stateless   = false
+    source      = "0.0.0.0/0" # or a more specific CIDR for your VPN clients
+    source_type = "CIDR_BLOCK"
+    protocol    = "17" # 17 = UDP
+
+    udp_options {
+      min = 1194
+      max = 1194
+    }
+  }
+
 }
