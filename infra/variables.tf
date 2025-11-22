@@ -98,7 +98,7 @@ variable "instance_configuration_node_instance_type" {
 
 variable "kubernetes_version" {
   description = "Kubernetes engine version"
-  default     = "v1.33.1"
+  default     = "v1.34.1"
 }
 
 variable "kubernetes_cluster_name" {
