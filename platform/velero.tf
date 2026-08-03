@@ -15,10 +15,14 @@ resource "helm_release" "velero" {
   name       = "velero"
   repository = "https://vmware-tanzu.github.io/helm-charts"
   chart      = "velero"
+  version    = var.velero_version
   namespace  = kubernetes_namespace.velero.metadata[0].name
 
   values = [
     <<EOF
+image:
+  repository: docker.io/velero/velero
+
 initContainers:
 - name: "velero-plugin-for-aws"
   image: "${var.velero_aws_plugin_image}"
@@ -40,6 +44,7 @@ configuration:
 
 deployNodeAgent: true
 snapshotsEnabled: false
+upgradeCRDs: false
 
 credentials:
   secretContents:
@@ -63,4 +68,44 @@ resource "kubernetes_secret" "velero_repo_credentials" {
   }
 
   type = "Opaque"
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "kubectl_manifest" "velero_fs_restore_action_config" {
+  yaml_body = <<EOF
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fs-restore-action-config
+  namespace: ${kubernetes_namespace.velero.metadata[0].name}
+  labels:
+    velero.io/plugin-config: ""
+    velero.io/pod-volume-restore: RestoreItemAction
+data:
+  image: ${var.velero_restore_helper_image}
+EOF
+
+  depends_on = [helm_release.velero]
+}
+
+resource "kubectl_manifest" "velero_change_image_name_config" {
+  yaml_body = <<EOF
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: change-image-name-config
+  namespace: ${kubernetes_namespace.velero.metadata[0].name}
+  labels:
+    velero.io/plugin-config: ""
+    velero.io/change-image-name: RestoreItemAction
+data:
+  restore-helper-image: ${var.velero_restore_image_mappings["restore_helper"]}
+  openvpn-image: ${var.velero_restore_image_mappings["openvpn"]}
+  vaultwarden-image: ${var.velero_restore_image_mappings["vaultwarden"]}
+EOF
+
+  depends_on = [helm_release.velero]
 }

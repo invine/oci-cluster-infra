@@ -1,0 +1,3 @@
+# Permit workload Applications to target the Velero namespace
+
+Workload Backup Schedules remain owned and manually synchronized by their child Applications, so the `application-workloads` AppProject permits the shared `velero` namespace as a destination while continuing to deny cluster-scoped kinds. We chose this minimal live-cutover change over extracting the schedules into a dedicated backup Application and AppProject; the consequence is that all trusted child Applications in the project can target namespaced resources in `velero`, so that destination is reserved by convention for Workload Backup Schedules.

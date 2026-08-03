@@ -1,4 +1,6 @@
 terraform {
+  required_version = ">= 1.12.0"
+
   required_providers {
     oci = {
       source  = "oracle/oci"
@@ -12,7 +14,17 @@ terraform {
 
     kubectl = {
       source  = "gavinbunney/kubectl"
-      version = ">= 1.7.0"
+      version = "~> 1.19.0"
+    }
+
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = ">= 2.33.0"
+    }
+
+    null = {
+      source  = "hashicorp/null"
+      version = ">= 3.2.3"
     }
   }
 

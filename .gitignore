@@ -1,6 +1,8 @@
-.terraform/*
-.terraform.lock.hcl
-default.tfvars
+.terraform/
+/.terraform.lock.hcl
+*.tfvars
+!*.example.tfvars
+*.tfplan
 *_kubeconfig
-terraform.tfstate
-terraform.tfstate.backup
+*.tfstate
+*.tfstate.*

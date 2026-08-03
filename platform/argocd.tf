@@ -8,6 +8,7 @@ resource "helm_release" "argocd" {
   name       = "argocd"
   repository = "https://argoproj.github.io/argo-helm"
   chart      = "argo-cd"
+  version    = var.argocd_version
   namespace  = kubernetes_namespace.argocd.metadata[0].name
 
   values = [
@@ -26,6 +27,11 @@ resource "helm_release" "argocd" {
         cert-manager.io/cluster-issuer: ${var.lets_encrypt_issuer_name}
   EOF
   ]
+
+  depends_on = [
+    helm_release.nginx_ingress,
+    kubectl_manifest.letsencrypt_issuer,
+  ]
 }
 
 resource "kubernetes_secret" "argocd_repo_secret" {
@@ -38,32 +44,34 @@ resource "kubernetes_secret" "argocd_repo_secret" {
   }
 
   data = {
-    url     = var.argocd_bootstrap_repo_url
-    type    = "git"
-    project = "default"
+    url  = var.argocd_bootstrap_repo_url
+    type = "git"
   }
 
   type = "Opaque"
 
-  depends_on = [
-    helm_release.argocd,
-    kubectl_manifest.letsencrypt_issuer
-  ]
+  lifecycle {
+    prevent_destroy = true
+  }
+
+  depends_on = [helm_release.argocd]
 }
 
 resource "kubectl_manifest" "argocd_bootstrap_applications" {
-  yaml_body  = <<EOF
+  yaml_body = <<EOF
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: argocd-bootstrap
-  namespace: ${kubernetes_namespace.argocd.metadata[0].name} # Replace with actual namespace if needed
+  namespace: ${kubernetes_namespace.argocd.metadata[0].name}
 spec:
   project: default
   source:
-    repoURL: ${var.argocd_bootstrap_repo_url} # Replace with actual URL if needed
-    path: ${var.argocd_bootstrap_repo_app_path} # Replace with actual path if needed
-    targetRevision: ${var.argocd_bootstrap_repo_branch} # Replace with actual branch if needed
+    repoURL: ${var.argocd_bootstrap_repo_url}
+    path: ${var.argocd_bootstrap_repo_path}
+    targetRevision: ${var.argocd_bootstrap_repo_branch}
+    directory:
+      recurse: true
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
@@ -72,7 +80,10 @@ spec:
       prune: true
       selfHeal: true
 EOF
-  depends_on = [helm_release.argocd]
+  depends_on = [
+    helm_release.argocd,
+    kubernetes_secret.argocd_repo_secret,
+  ]
 }
 
 data "kubernetes_secret" "argocd_admin_secret" {

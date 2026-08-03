@@ -1,0 +1,8 @@
+#!/bin/sh
+
+set -eu
+
+# Terraform local state, backups, plans, and variable files can contain secrets.
+umask 077
+
+exec terraform "$@"
