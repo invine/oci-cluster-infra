@@ -98,7 +98,7 @@ variable "instance_configuration_node_instance_type" {
 
 variable "kubernetes_version" {
   description = "Kubernetes engine version"
-  default     = "v1.34.1"
+  default     = "v1.34.2"
 }
 
 variable "kubernetes_cluster_name" {
@@ -117,7 +117,27 @@ variable "pool_name" {
 }
 
 variable "node_pool_size" {
-  description = "Size of node pool"
+  description = "Size of existing node pool"
+  default     = 3
+}
+
+variable "enable_legacy_node_pool" {
+  description = "Keep the original node pool enabled"
+  default     = false
+}
+
+variable "enable_bluegreen_new_pool" {
+  description = "Enable the blue/green node pool"
+  default     = true
+}
+
+variable "new_pool_name" {
+  description = "Blue/green node pool name postfix"
+  default     = "pool-v134-8cde4f63"
+}
+
+variable "new_node_pool_size" {
+  description = "Size of the blue/green node pool"
   default     = 3
 }
 
@@ -162,8 +182,11 @@ variable "k8s_services_cird" {
 
 variable "duckdns_subdomain" {
   description = "DuckDNS Subdomain"
+  type        = string
 }
 
 variable "duckdns_token" {
   description = "DuckDNS Token"
+  type        = string
+  sensitive   = true
 }
