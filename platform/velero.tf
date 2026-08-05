@@ -10,6 +10,38 @@ resource "kubernetes_namespace" "velero" {
   }
 }
 
+locals {
+  # Keep every component on the release set frozen in the production upgrade
+  # plan. Selecting the chart is the only version input; the remaining images
+  # cannot drift to a different Velero minor independently.
+  velero_release_sets = {
+    "7.2.2" = {
+      application_version = "1.14.1"
+      aws_plugin_version  = "1.8.2"
+    }
+    "8.7.2" = {
+      application_version = "1.15.2"
+      aws_plugin_version  = "1.11.1"
+    }
+    "10.1.3" = {
+      application_version = "1.16.2"
+      aws_plugin_version  = "1.12.2"
+    }
+    "11.4.0" = {
+      application_version = "1.17.1"
+      aws_plugin_version  = "1.13.2"
+    }
+    "12.1.0" = {
+      application_version = "1.18.1"
+      aws_plugin_version  = "1.14.2"
+    }
+  }
+
+  velero_release              = local.velero_release_sets[var.velero_version]
+  velero_aws_plugin_image     = "docker.io/velero/velero-plugin-for-aws:v${local.velero_release.aws_plugin_version}"
+  velero_restore_helper_image = "docker.io/velero/velero-restore-helper:v${local.velero_release.application_version}"
+}
+
 # Helm chart to install Velero
 resource "helm_release" "velero" {
   name       = "velero"
@@ -22,10 +54,11 @@ resource "helm_release" "velero" {
     <<EOF
 image:
   repository: docker.io/velero/velero
+  tag: "v${local.velero_release.application_version}"
 
 initContainers:
 - name: "velero-plugin-for-aws"
-  image: "${var.velero_aws_plugin_image}"
+  image: "${local.velero_aws_plugin_image}"
   imagePullPolicy: "IfNotPresent"
   volumeMounts:
   - mountPath: /target
@@ -85,7 +118,7 @@ metadata:
     velero.io/plugin-config: ""
     velero.io/pod-volume-restore: RestoreItemAction
 data:
-  image: ${var.velero_restore_helper_image}
+  image: ${local.velero_restore_helper_image}
 EOF
 
   depends_on = [helm_release.velero]

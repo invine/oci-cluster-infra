@@ -117,9 +117,20 @@ variable "nginx_ingress_version" {
 }
 
 variable "velero_version" {
-  description = "Velero Helm chart version."
+  description = "Exact Velero Helm chart version for the current frozen serial upgrade stage."
   type        = string
   default     = "7.2.2"
+
+  validation {
+    condition = contains([
+      "7.2.2",
+      "8.7.2",
+      "10.1.3",
+      "11.4.0",
+      "12.1.0",
+    ], var.velero_version)
+    error_message = "velero_version must be a frozen serial upgrade stage from docs/runbooks/velero-upgrade.md."
+  }
 }
 
 variable "application_namespace_wait_timeout" {
@@ -156,14 +167,6 @@ variable "velero_backup_bucket_prefix" {
   description = "Object prefix used by Velero inside the External Backup Store."
   type        = string
   default     = ""
-}
-
-variable "velero_aws_plugin_image" {
-  default = "docker.io/velero/velero-plugin-for-aws:v1.8.2"
-}
-
-variable "velero_restore_helper_image" {
-  default = "docker.io/velero/velero-restore-helper:v1.14.1"
 }
 
 variable "velero_restore_image_mappings" {

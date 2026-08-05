@@ -17,6 +17,10 @@ longhorn_version = "1.7.2"
 # substitute stages: 1.4.0 -> 1.4.2 -> 2.0.1 -> 2.6.4.
 nginx_ingress_version = "1.4.0"
 
+# Velero advances one reviewed Terraform apply at a time, after applying the
+# matching CRDs: 7.2.2 -> 8.7.2 -> 10.1.3 -> 11.4.0 -> 12.1.0.
+velero_version = "7.2.2"
+
 lets_encrypt_email         = ""
 lets_encrypt_issuer_name   = "letsencrypt-prod"
 lets_encrypt_issuer_server = "https://acme-v02.api.letsencrypt.org/directory"

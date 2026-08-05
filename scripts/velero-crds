@@ -1,0 +1,73 @@
+#!/bin/sh
+
+set -eu
+
+usage() {
+  echo "usage: $0 <render|apply> <chart-version>" >&2
+  echo "chart-version: 8.7.2 | 10.1.3 | 11.4.0 | 12.1.0" >&2
+  exit 2
+}
+
+[ "$#" -eq 2 ] || usage
+
+action=$1
+chart_version=$2
+
+case "$chart_version" in
+  8.7.2)
+    application_version=1.15.2
+    chart_sha256=df9fdbe9a1cc2055b6e13881079b6ed475b557366a10ee8e5d36ab5580bd15ec
+    ;;
+  10.1.3)
+    application_version=1.16.2
+    chart_sha256=f647dc80d22b3334c9078b418beb3ff9b2369b265083a54f74869a00b081d157
+    ;;
+  11.4.0)
+    application_version=1.17.1
+    chart_sha256=b15aca7e21bfc6bba68a37eb4026582d920c379ea1f376163c4319823cc3784a
+    ;;
+  12.1.0)
+    application_version=1.18.1
+    chart_sha256=cd23589ad1b2d25cdd3220f6866b3f6f4c5683c4c09494e76a14700b33f81f83
+    ;;
+  *) usage ;;
+esac
+
+chart_url="https://github.com/vmware-tanzu/helm-charts/releases/download/velero-${chart_version}/velero-${chart_version}.tgz"
+crd_directory=$(mktemp -d "${TMPDIR:-/tmp}/velero-crds.XXXXXX")
+trap 'rm -rf "$crd_directory"' EXIT HUP INT TERM
+chart_archive="$crd_directory/velero-${chart_version}.tgz"
+
+curl -fsSL "$chart_url" -o "$chart_archive"
+printf '%s  %s\n' "$chart_sha256" "$chart_archive" | shasum -a 256 -c - >&2
+
+render_crds() {
+  helm show crds "$chart_archive"
+}
+
+case "$action" in
+  render)
+    render_crds
+    ;;
+  apply)
+    confirmation="${VELERO_CRD_APPLY_CONFIRM:-}"
+    expected_confirmation="${chart_version}/${application_version}"
+    if [ "$confirmation" != "$expected_confirmation" ]; then
+      echo "Refusing to mutate CRDs without VELERO_CRD_APPLY_CONFIRM=$expected_confirmation" >&2
+      exit 1
+    fi
+
+    apply_context="${VELERO_CRD_APPLY_CONTEXT:-}"
+    if [ -z "$apply_context" ]; then
+      echo "Refusing to mutate CRDs without VELERO_CRD_APPLY_CONTEXT" >&2
+      exit 1
+    fi
+
+    crd_manifest="$crd_directory/velero-${application_version}-crds.yaml"
+    render_crds > "$crd_manifest"
+    kubectl --context "$apply_context" apply -f "$crd_manifest"
+    ;;
+  *)
+    usage
+    ;;
+esac
