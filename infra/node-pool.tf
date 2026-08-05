@@ -1,13 +1,34 @@
 # Source from https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/containerengine_node_pool
 
-resource "oci_containerengine_node_pool" "oke-node-pool" {
-  count = var.enable_legacy_node_pool ? 1 : 0
+locals {
+  approved_worker_image_family = "Oracle-Linux-8."
 
-  # Required
+  approved_worker_images = {
+    for generation, pool in var.worker_pools : generation => [
+      for source in data.oci_containerengine_node_pool_option.worker_pool[generation].sources : source
+      if source.image_id == pool.image_ocid &&
+      source.source_type == "IMAGE" &&
+      startswith(source.source_name, local.approved_worker_image_family) &&
+      strcontains(source.source_name, "-OKE-${trimprefix(pool.kubernetes_version, "v")}-")
+    ]
+  }
+}
+
+data "oci_containerengine_node_pool_option" "worker_pool" {
+  for_each = var.worker_pools
+
+  compartment_id      = oci_identity_compartment.k8s_compartment.id
+  node_pool_option_id = "all"
+}
+
+resource "oci_containerengine_node_pool" "worker_pool" {
+  for_each = var.worker_pools
+
   cluster_id         = oci_containerengine_cluster.k8s_cluster.id
   compartment_id     = oci_identity_compartment.k8s_compartment.id
-  kubernetes_version = var.kubernetes_version
-  name               = "${oci_containerengine_cluster.k8s_cluster.name}-${var.pool_name}"
+  kubernetes_version = each.value.kubernetes_version
+  name               = each.value.name
+
   node_config_details {
     placement_configs {
       availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
@@ -21,29 +42,25 @@ resource "oci_containerengine_node_pool" "oke-node-pool" {
       availability_domain = data.oci_identity_availability_domains.ads.availability_domains[2].name
       subnet_id           = oci_core_subnet.vcn-private-subnet.id
     }
-    size = var.node_pool_size
+    size = each.value.size
 
     node_pool_pod_network_option_details {
-      #Required
       cni_type       = var.cluster_cluster_pod_network_options_cni_type
       pod_subnet_ids = [oci_core_subnet.vcn-private-subnet.id]
     }
   }
+
   node_shape = var.worker_node_shape
   node_shape_config {
     memory_in_gbs = var.worker_node_memory
     ocpus         = var.worker_node_ocpus
   }
 
-  # Using image Oracle-Linux-7.x-<date>
-  # Find image OCID for your region from https://docs.oracle.com/iaas/images/ 
   node_source_details {
-    # image_id    = data.oci_containerengine_node_pool_option.k8s_node_pool_option.sources[0].image_id
-    image_id    = local.oke_latest_image_id
+    image_id    = each.value.image_ocid
     source_type = "IMAGE"
   }
 
-  # Optional
   initial_node_labels {
     key   = "name"
     value = oci_containerengine_cluster.k8s_cluster.name
@@ -51,101 +68,18 @@ resource "oci_containerengine_node_pool" "oke-node-pool" {
 
   lifecycle {
     create_before_destroy = true
-  }
+    prevent_destroy       = true
 
-  ssh_public_key = tls_private_key.worker_node_ssh_key.public_key_openssh
-
-}
-
-resource "oci_containerengine_node_pool" "oke-node-pool-bluegreen" {
-  count = var.enable_bluegreen_new_pool ? 1 : 0
-
-  cluster_id         = oci_containerengine_cluster.k8s_cluster.id
-  compartment_id     = oci_identity_compartment.k8s_compartment.id
-  kubernetes_version = var.kubernetes_version
-  name               = "${oci_containerengine_cluster.k8s_cluster.name}-${var.new_pool_name}"
-
-  node_config_details {
-    placement_configs {
-      availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
-      subnet_id           = oci_core_subnet.vcn-private-subnet.id
+    precondition {
+      condition     = length(local.approved_worker_images[each.key]) == 1
+      error_message = "Worker pool ${each.key} image_ocid must resolve to an available ${local.approved_worker_image_family}x OKE image for Kubernetes ${each.value.kubernetes_version}."
     }
-    placement_configs {
-      availability_domain = data.oci_identity_availability_domains.ads.availability_domains[1].name
-      subnet_id           = oci_core_subnet.vcn-private-subnet.id
-    }
-    placement_configs {
-      availability_domain = data.oci_identity_availability_domains.ads.availability_domains[2].name
-      subnet_id           = oci_core_subnet.vcn-private-subnet.id
-    }
-    size = var.new_node_pool_size
-
-    node_pool_pod_network_option_details {
-      cni_type       = var.cluster_cluster_pod_network_options_cni_type
-      pod_subnet_ids = [oci_core_subnet.vcn-private-subnet.id]
-    }
-  }
-
-  node_shape = var.worker_node_shape
-  node_shape_config {
-    memory_in_gbs = var.worker_node_memory
-    ocpus         = var.worker_node_ocpus
-  }
-
-  node_source_details {
-    image_id    = local.oke_latest_image_id
-    source_type = "IMAGE"
-  }
-
-  initial_node_labels {
-    key   = "name"
-    value = oci_containerengine_cluster.k8s_cluster.name
   }
 
   ssh_public_key = tls_private_key.worker_node_ssh_key.public_key_openssh
 }
 
-data "oci_core_images" "worker_node_instance_images" {
-  compartment_id           = oci_identity_compartment.k8s_compartment.id
-  operating_system         = var.worker_node_os
-  operating_system_version = var.worker_node_os_version
-  shape                    = var.worker_node_shape
-  sort_by                  = "TIMECREATED"
-  sort_order               = "DESC"
-}
-
-data "oci_containerengine_node_pool_option" "k8s_node_pool_option" {
-  #Required
-  node_pool_option_id = oci_containerengine_cluster.k8s_cluster.id
-
-  #Optional
-  compartment_id = oci_identity_compartment.k8s_compartment.id
-}
-
-locals {
-  # strip leading "v" if user passed "v1.33.1"
-  kube_ver_no_v = trimprefix(var.kubernetes_version, "v")
-
-  # All image "sources" OCI offers for this cluster
-  oke_sources = data.oci_containerengine_node_pool_option.k8s_node_pool_option.sources
-
-  # Only sources that match our cluster's K8s version in their name (e.g., "...-OKE-1.33.1-20250701")
-  oke_sources_for_ver = [
-    for s in local.oke_sources : s
-    if length(regexall("[-_]OKE-${local.kube_ver_no_v}", s.source_name)) > 0
-  ]
-
-  # Build a lookup of name -> id
-  oke_source_map = { for s in local.oke_sources_for_ver : s.source_name => s.image_id }
-
-  # Sort candidate names lexically (date suffix makes lexical == chronological)
-  oke_sorted_names = sort(keys(local.oke_source_map))
-
-  # Pick newest (last element) or fall back to the first overall source if no version match
-  oke_latest_image_id = (
-    length(local.oke_sorted_names) > 0 ?
-    lookup(local.oke_source_map, local.oke_sorted_names[length(local.oke_sorted_names) - 1]) :
-    local.oke_sources[0].image_id
-  )
-
+moved {
+  from = oci_containerengine_node_pool.oke-node-pool-bluegreen[0]
+  to   = oci_containerengine_node_pool.worker_pool["v1.34.2"]
 }

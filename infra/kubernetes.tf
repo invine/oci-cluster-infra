@@ -1,6 +1,6 @@
 resource "oci_containerengine_cluster" "k8s_cluster" {
   compartment_id     = oci_identity_compartment.k8s_compartment.id
-  kubernetes_version = var.kubernetes_version
+  kubernetes_version = var.control_plane_kubernetes_version
   name               = "${var.name_prefix}${var.kubernetes_cluster_name}"
   vcn_id             = module.vcn.vcn_id
 

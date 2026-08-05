@@ -96,9 +96,15 @@ variable "instance_configuration_node_instance_type" {
   default     = ""
 }
 
-variable "kubernetes_version" {
-  description = "Kubernetes engine version"
+variable "control_plane_kubernetes_version" {
+  description = "Kubernetes version for the OKE control plane, independent of worker-pool versions."
+  type        = string
   default     = "v1.34.2"
+
+  validation {
+    condition     = can(regex("^v[0-9]+\\.[0-9]+\\.[0-9]+$", var.control_plane_kubernetes_version))
+    error_message = "control_plane_kubernetes_version must be an exact version such as v1.34.2."
+  }
 }
 
 variable "kubernetes_cluster_name" {
@@ -111,34 +117,38 @@ variable "kubernetes_public_ip_enables" {
   default     = false
 }
 
-variable "pool_name" {
-  description = "Worker Pool name postfix"
-  default     = "pool"
-}
+variable "worker_pools" {
+  description = "Worker pools keyed by their immutable Kubernetes generation. Each image OCID is pinned and validated against OCI's OKE image catalog."
+  type = map(object({
+    name               = string
+    kubernetes_version = string
+    size               = number
+    image_ocid         = string
+  }))
 
-variable "node_pool_size" {
-  description = "Size of existing node pool"
-  default     = 3
-}
+  validation {
+    condition = alltrue([
+      for generation, pool in var.worker_pools :
+      generation == pool.kubernetes_version && can(regex("^v[0-9]+\\.[0-9]+\\.[0-9]+$", generation))
+    ])
+    error_message = "Each worker_pools key must be the same exact Kubernetes version declared by that pool."
+  }
 
-variable "enable_legacy_node_pool" {
-  description = "Keep the original node pool enabled"
-  default     = false
-}
+  validation {
+    condition = alltrue([
+      for pool in values(var.worker_pools) :
+      length(trimspace(pool.name)) > 0 && pool.size > 0 && floor(pool.size) == pool.size
+    ])
+    error_message = "Each worker pool must have a stable non-empty name and a positive whole-number size."
+  }
 
-variable "enable_bluegreen_new_pool" {
-  description = "Enable the blue/green node pool"
-  default     = true
-}
-
-variable "new_pool_name" {
-  description = "Blue/green node pool name postfix"
-  default     = "pool-v134-8cde4f63"
-}
-
-variable "new_node_pool_size" {
-  description = "Size of the blue/green node pool"
-  default     = 3
+  validation {
+    condition = alltrue([
+      for pool in values(var.worker_pools) :
+      can(regex("^ocid1\\.image\\.", pool.image_ocid))
+    ])
+    error_message = "Each worker pool must pin an OCI image OCID."
+  }
 }
 
 variable "worker_node_shape" {
@@ -154,18 +164,6 @@ variable "worker_node_ocpus" {
 variable "worker_node_memory" {
   description = "Amount of memory available to worker nodes, in gigabytes."
   default     = 6
-}
-
-variable "worker_node_os" {
-  description = "Operating system for worker nodes."
-  # default     = "Canonical Ubuntu"
-  default = "Oracle Linux"
-}
-
-variable "worker_node_os_version" {
-  description = "Operating system version for worker nodes."
-  default     = "8"
-  # default     = "22.04 Minimal aarch64"
 }
 
 variable "cluster_cluster_pod_network_options_cni_type" {
