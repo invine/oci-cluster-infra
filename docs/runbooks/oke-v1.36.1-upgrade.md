@@ -72,13 +72,13 @@ only while the old pool exists.
 ## Evidence and approval contract
 
 Create a private evidence directory outside the tracked repository with process
-umask `077`, directory mode `0700`, and file mode `0600`. Keep real tfvars,
-Terraform state and backups, saved plans, generated kubeconfigs, credentials,
-raw command output containing identifiers or sensitive data, and completed
-evidence records untracked. They are **Local Sensitive Artifacts**. Record only
-redacted references or checksums in review systems; never commit secret values
-or sensitive evidence. Confirm `git status --short` before every repository
-commit and at handoff.
+umask `077`, directory mode `0700`, and file mode `0600`. Real tfvars, Terraform
+state and state backups, saved plans, generated kubeconfigs, credential files,
+and evidence files containing sensitive data are **Local Sensitive Artifacts**.
+Keep all Local Sensitive Artifacts untracked. Record only redacted references
+or checksums in review systems; never commit secret values, sensitive raw
+output, or sensitive evidence. Confirm `git status --short` before every
+repository commit and at handoff.
 
 Every evidence snapshot records:
 
@@ -93,6 +93,14 @@ Every evidence snapshot records:
 - for Terraform, the root, full command, saved-plan private path, SHA-256,
   creation time, configuration revision, provider lock-file checksum, complete
   effect summary, reviewer, decision, and approval time.
+
+The workload behavior audited during planning was frozen at
+`k8s-charts@eec87a3274e2b753e66939d6b2786fb728d8fb05` and
+`my-medusa-store@06a825efd520771cd2c04500c10f0eb6b371aeaf`. Compare the
+reconciled revisions and material behavior against these baselines at every
+workload-related gate. A materially different revision invalidates the prior
+workload evidence; stop for a new readiness review rather than assuming the old
+assessment still applies.
 
 An approval applies only to the exact saved full plan and evidence named in its
 record. It is invalidated by relevant drift; any failed or stale check; any
@@ -265,9 +273,10 @@ For exactly one selected old worker at a time:
    no engine or replica on the drained node, and no pending operation;
 6. require all Applications `Healthy`/`Synced`, affected controllers and pods
    ready, Service endpoints and Load Balancer backends healthy; and
-7. repeat all affected functional checks, including HTTP/TLS, OpenVPN and private
-   reachability, Vaultwarden login/read, and Medusa storefront/backend,
-   PostgreSQL, Redis, uploads, and persistent read/write behavior.
+7. repeat all affected functional checks, including HTTP/TLS and Echo, OpenVPN
+   and private reachability, Vaultwarden login/read, and Medusa
+   storefront/backend, PostgreSQL, Redis, uploads, and persistent read/write
+   behavior.
 
 Record start/end times, resolved identity and before/after placement, commands,
 evictions, interruption, rebuild/reattach observations, checks, and approval.

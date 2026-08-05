@@ -24,6 +24,9 @@ Controlling runbook: [`oke-v1.36.1-upgrade.md`](oke-v1.36.1-upgrade.md)
 | Infrastructure Git revision | `<sha>` |
 | Reconciled k8s-charts revision | `<sha>` |
 | Reconciled Medusa revision | `<sha>` |
+| Audited k8s-charts baseline | `eec87a3274e2b753e66939d6b2786fb728d8fb05` |
+| Audited Medusa baseline | `06a825efd520771cd2c04500c10f0eb6b371aeaf` |
+| Material difference from audited workload behavior | `<none or STOP for new readiness review>` |
 | Provider lock-file checksum(s) | `<sha256>` |
 | Private-artifact permissions verified | `<yes/no, timestamp, operator>` |
 | Repository `git status --short` checked | `<result, timestamp>` |
@@ -219,7 +222,7 @@ Copy for each old worker in the approved live risk order.
 | Volume/engine/replica before-after placement | `<value>` |
 | Exactly three healthy replicas/no pending operation | `<pass/STOP>` |
 | Argo/controller/pod/endpoint/LB checks | `<pass/STOP>` |
-| HTTP/TLS/OpenVPN/Vaultwarden/Medusa checks | `<pass/STOP>` |
+| HTTP/TLS/Echo/OpenVPN/Vaultwarden/Medusa checks | `<pass/STOP>` |
 | Decision: continue / pause / rollback | `<value>` |
 | Incident/repair/rollback evidence | `<none/value>` |
 

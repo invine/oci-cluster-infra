@@ -34,3 +34,8 @@
 - No automated test suite was added. No Terraform plan, apply, state command,
   OCI work request, Helm/CRD action, Argo sync, or Kubernetes/cluster mutation
   was performed.
+- The required two-axis review found and then verified fixes for the audited
+  Application Workload revision baselines, per-worker Echo evidence, and the
+  Local Sensitive Artifact vocabulary. Final Standards and Spec re-reviews
+  reported no findings. `CONTEXT.md` now reflects the approved sensitive-artifact
+  categories used by the operator package.

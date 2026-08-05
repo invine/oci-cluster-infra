@@ -89,7 +89,7 @@ The transfer of an existing live Explicit Secret into Terraform configuration an
 _Avoid_: Secret rotation, recreation
 
 **Local Sensitive Artifact**:
-A local Terraform variable file, state file, state backup, or saved plan that can disclose an explicit secret. Local sensitive artifacts are excluded from Git, restricted to the current user, and created under a restrictive process umask.
+A local Terraform variable file, state file, state backup, saved plan, generated kubeconfig, credential file, or evidence file that contains sensitive data. Local Sensitive Artifacts are excluded from Git, restricted to the current user, and created under a restrictive process umask.
 _Avoid_: Ordinary project file, tracked configuration example
 
 **Migration Acceptance Gate**:
