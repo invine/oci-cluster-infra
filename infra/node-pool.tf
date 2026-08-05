@@ -1,22 +1,20 @@
 # Source from https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/containerengine_node_pool
 
 locals {
-  approved_worker_image_family = "Oracle-Linux-8."
+  approved_worker_image_name_prefix = "Oracle-Linux-8."
 
-  approved_worker_images = {
+  matching_worker_image_sources = {
     for generation, pool in var.worker_pools : generation => [
-      for source in data.oci_containerengine_node_pool_option.worker_pool[generation].sources : source
+      for source in data.oci_containerengine_node_pool_option.worker_images.sources : source
       if source.image_id == pool.image_ocid &&
       source.source_type == "IMAGE" &&
-      startswith(source.source_name, local.approved_worker_image_family) &&
+      startswith(source.source_name, local.approved_worker_image_name_prefix) &&
       strcontains(source.source_name, "-OKE-${trimprefix(pool.kubernetes_version, "v")}-")
     ]
   }
 }
 
-data "oci_containerengine_node_pool_option" "worker_pool" {
-  for_each = var.worker_pools
-
+data "oci_containerengine_node_pool_option" "worker_images" {
   compartment_id      = oci_identity_compartment.k8s_compartment.id
   node_pool_option_id = "all"
 }
@@ -71,8 +69,8 @@ resource "oci_containerengine_node_pool" "worker_pool" {
     prevent_destroy       = true
 
     precondition {
-      condition     = length(local.approved_worker_images[each.key]) == 1
-      error_message = "Worker pool ${each.key} image_ocid must resolve to an available ${local.approved_worker_image_family}x OKE image for Kubernetes ${each.value.kubernetes_version}."
+      condition     = length(local.matching_worker_image_sources[each.key]) == 1
+      error_message = "Worker pool ${each.key} image_ocid must resolve to an available ${local.approved_worker_image_name_prefix}x OKE image for Kubernetes ${each.value.kubernetes_version}."
     }
   }
 
