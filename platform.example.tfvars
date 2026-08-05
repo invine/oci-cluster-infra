@@ -5,6 +5,10 @@ fingerprint      = ""
 private_key_path = ""
 region           = ""
 
+# Argo CD advances one reviewed Terraform apply at a time. Do not skip or
+# substitute chart stages; see docs/runbooks/argocd-upgrade.md.
+argocd_version = "7.6.12"
+
 # cert-manager advances one reviewed Terraform apply at a time. Do not skip or
 # substitute stages: v1.16.1 -> v1.17.4 -> v1.18.6 -> v1.19.6 -> v1.20.3 -> v1.21.1.
 cert_manager_version = "v1.16.1"

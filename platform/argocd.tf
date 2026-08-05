@@ -13,6 +13,9 @@ resource "helm_release" "argocd" {
 
   values = [
     <<EOF
+  crds:
+    install: true
+    keep: true
   configs:
     params:
       server.insecure: true

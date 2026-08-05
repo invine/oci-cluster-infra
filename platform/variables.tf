@@ -59,9 +59,24 @@ variable "argocd_bootstrap_repo_branch" {
 }
 
 variable "argocd_version" {
-  description = "Argo CD Helm chart version."
+  description = "Exact Argo CD Helm chart version for the current frozen serial upgrade stage."
   type        = string
   default     = "7.6.12"
+
+  validation {
+    condition = contains([
+      "7.6.12",
+      "7.7.23",
+      "7.9.1",
+      "8.2.7",
+      "9.0.6",
+      "9.3.7",
+      "9.5.11",
+      "10.2.2",
+      "10.2.3",
+    ], var.argocd_version)
+    error_message = "argocd_version must be a frozen serial upgrade stage from docs/runbooks/argocd-upgrade.md."
+  }
 }
 
 variable "cert_manager_version" {
