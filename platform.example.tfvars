@@ -5,6 +5,10 @@ fingerprint      = ""
 private_key_path = ""
 region           = ""
 
+# cert-manager advances one reviewed Terraform apply at a time. Do not skip or
+# substitute stages: v1.16.1 -> v1.17.4 -> v1.18.6 -> v1.19.6 -> v1.20.3 -> v1.21.1.
+cert_manager_version = "v1.16.1"
+
 # Longhorn advances one reviewed Terraform apply at a time. Do not skip or
 # substitute stages: 1.7.2 -> 1.8.2 -> 1.9.2 -> 1.10.2 -> 1.11.3 -> 1.12.0.
 longhorn_version = "1.7.2"

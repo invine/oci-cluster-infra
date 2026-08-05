@@ -65,9 +65,21 @@ variable "argocd_version" {
 }
 
 variable "cert_manager_version" {
-  description = "cert-manager Helm chart version."
+  description = "Exact cert-manager Helm chart version for the current frozen serial upgrade stage."
   type        = string
   default     = "v1.16.1"
+
+  validation {
+    condition = contains([
+      "v1.16.1",
+      "v1.17.4",
+      "v1.18.6",
+      "v1.19.6",
+      "v1.20.3",
+      "v1.21.1",
+    ], var.cert_manager_version)
+    error_message = "cert_manager_version must be a frozen serial upgrade stage from docs/runbooks/cert-manager-upgrade.md."
+  }
 }
 
 variable "longhorn_version" {
