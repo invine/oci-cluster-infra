@@ -101,9 +101,19 @@ variable "longhorn_version" {
 }
 
 variable "nginx_ingress_version" {
-  description = "NGINX Ingress Controller Helm chart version."
+  description = "Exact F5 NGINX Ingress Controller Helm chart version for the current frozen serial upgrade stage."
   type        = string
   default     = "1.4.0"
+
+  validation {
+    condition = contains([
+      "1.4.0",
+      "1.4.2",
+      "2.0.1",
+      "2.6.4",
+    ], var.nginx_ingress_version)
+    error_message = "nginx_ingress_version must be a frozen serial upgrade stage from docs/runbooks/f5-nginx-ingress-upgrade.md."
+  }
 }
 
 variable "velero_version" {

@@ -13,10 +13,19 @@ resource "helm_release" "nginx_ingress" {
 
   values = [
     <<EOF
+  # Pin the chart 1.4.0 identities across the 3.x-to-4.x migration. Changing
+  # them can replace the OCI Load Balancer-backed Service or its selectors.
+  serviceNameOverride: nginx-ingress-controller
   controller:
+    name: controller
+    selectorLabels:
+      app.kubernetes.io/name: nginx-ingress
+      app.kubernetes.io/instance: nginx-ingress
     image:
       repository: docker.io/nginx/nginx-ingress
     kind: daemonset
+    logLevel: ${startswith(var.nginx_ingress_version, "1.") ? 1 : "info"}
+    logFormat: glog
     service:
       type: LoadBalancer
       annotations:

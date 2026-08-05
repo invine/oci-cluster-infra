@@ -13,6 +13,10 @@ cert_manager_version = "v1.16.1"
 # substitute stages: 1.7.2 -> 1.8.2 -> 1.9.2 -> 1.10.2 -> 1.11.3 -> 1.12.0.
 longhorn_version = "1.7.2"
 
+# F5 NGINX advances one reviewed Terraform apply at a time. Do not skip or
+# substitute stages: 1.4.0 -> 1.4.2 -> 2.0.1 -> 2.6.4.
+nginx_ingress_version = "1.4.0"
+
 lets_encrypt_email         = ""
 lets_encrypt_issuer_name   = "letsencrypt-prod"
 lets_encrypt_issuer_server = "https://acme-v02.api.letsencrypt.org/directory"
