@@ -4,6 +4,19 @@ resource "kubernetes_namespace" "longhorn" {
   }
 }
 
+locals {
+  # v1.10.2's official release notes require the hotfixed backing image manager.
+  longhorn_backing_image_manager_tag = var.longhorn_version == "1.10.2" ? "v1.10.2-hotfix-1" : "v${var.longhorn_version}"
+
+  # Charts before v1.10 expect the registry in each repository. Newer charts
+  # prepend their default docker.io registry and would otherwise render it twice.
+  longhorn_image_repository_prefix = contains([
+    "1.7.2",
+    "1.8.2",
+    "1.9.2",
+  ], var.longhorn_version) ? "docker.io/longhornio" : "longhornio"
+}
+
 resource "helm_release" "longhorn" {
   name       = "longhorn"
   repository = "https://charts.longhorn.io"
@@ -13,46 +26,54 @@ resource "helm_release" "longhorn" {
 
   values = [
     <<EOF
+preUpgradeChecker:
+  jobEnabled: true
+  upgradeVersionCheck: true
+
 image:
   longhorn:
     backingImageManager:
-      repository: docker.io/longhornio/backing-image-manager
+      repository: ${local.longhorn_image_repository_prefix}/backing-image-manager
+      tag: ${local.longhorn_backing_image_manager_tag}
     engine:
-      repository: docker.io/longhornio/longhorn-engine
+      repository: ${local.longhorn_image_repository_prefix}/longhorn-engine
     instanceManager:
-      repository: docker.io/longhornio/longhorn-instance-manager
+      repository: ${local.longhorn_image_repository_prefix}/longhorn-instance-manager
     manager:
-      repository: docker.io/longhornio/longhorn-manager
+      repository: ${local.longhorn_image_repository_prefix}/longhorn-manager
     shareManager:
-      repository: docker.io/longhornio/longhorn-share-manager
+      repository: ${local.longhorn_image_repository_prefix}/longhorn-share-manager
     supportBundleKit:
-      repository: docker.io/longhornio/support-bundle-kit
+      repository: ${local.longhorn_image_repository_prefix}/support-bundle-kit
     ui:
-      repository: docker.io/longhornio/longhorn-ui
+      repository: ${local.longhorn_image_repository_prefix}/longhorn-ui
   csi:
     attacher:
-      repository: docker.io/longhornio/csi-attacher
+      repository: ${local.longhorn_image_repository_prefix}/csi-attacher
     livenessProbe:
-      repository: docker.io/longhornio/livenessprobe
+      repository: ${local.longhorn_image_repository_prefix}/livenessprobe
     nodeDriverRegistrar:
-      repository: docker.io/longhornio/csi-node-driver-registrar
+      repository: ${local.longhorn_image_repository_prefix}/csi-node-driver-registrar
     provisioner:
-      repository: docker.io/longhornio/csi-provisioner
+      repository: ${local.longhorn_image_repository_prefix}/csi-provisioner
     resizer:
-      repository: docker.io/longhornio/csi-resizer
+      repository: ${local.longhorn_image_repository_prefix}/csi-resizer
     snapshotter:
-      repository: docker.io/longhornio/csi-snapshotter
+      repository: ${local.longhorn_image_repository_prefix}/csi-snapshotter
 
 defaultSettings:
   defaultReplicaCount: 3
   allowVolumeCreationWithDegradedAvailability: false
   replicaSoftAntiAffinity: false
   replicaAutoBalance: best-effort
+  concurrentAutomaticEngineUpgradePerNodeLimit: 0
+  v2DataEngine: false
 
 persistence:
   defaultClass: true
   defaultClassReplicaCount: 3
   defaultDataLocality: disabled
+  dataEngine: v1
 EOF
   ]
 }

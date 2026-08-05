@@ -71,9 +71,21 @@ variable "cert_manager_version" {
 }
 
 variable "longhorn_version" {
-  description = "Longhorn Helm chart version."
+  description = "Exact Longhorn Helm chart version for the current frozen serial upgrade stage."
   type        = string
   default     = "1.7.2"
+
+  validation {
+    condition = contains([
+      "1.7.2",
+      "1.8.2",
+      "1.9.2",
+      "1.10.2",
+      "1.11.3",
+      "1.12.0",
+    ], var.longhorn_version)
+    error_message = "longhorn_version must be a frozen serial upgrade stage from docs/runbooks/longhorn-upgrade.md."
+  }
 }
 
 variable "nginx_ingress_version" {
