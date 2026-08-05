@@ -91,3 +91,7 @@ _Avoid_: Secret rotation, recreation
 **Local Sensitive Artifact**:
 A local Terraform variable file, state file, state backup, or saved plan that can disclose an explicit secret. Local sensitive artifacts are excluded from Git, restricted to the current user, and created under a restrictive process umask.
 _Avoid_: Ordinary project file, tracked configuration example
+
+**Migration Acceptance Gate**:
+The condition for retiring a previous worker pool: every Application Workload is Healthy and Synced, and the declared readiness, functional, ingress, storage, and backup checks all pass.
+_Avoid_: Running pods are enough, timed observation window
