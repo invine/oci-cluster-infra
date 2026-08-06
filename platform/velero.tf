@@ -50,11 +50,10 @@ resource "helm_release" "velero" {
   version    = var.velero_version
   namespace  = kubernetes_namespace.velero.metadata[0].name
 
-  values = [
+  values = concat([
     <<EOF
 image:
   repository: docker.io/velero/velero
-  tag: "v${local.velero_release.application_version}"
 
 initContainers:
 - name: "velero-plugin-for-aws"
@@ -86,7 +85,12 @@ credentials:
       aws_access_key_id = ${oci_identity_customer_secret_key.velero_access_key.id}
       aws_secret_access_key = ${oci_identity_customer_secret_key.velero_access_key.key}
     EOF
-  ]
+    ], var.velero_version == "7.2.2" ? [] : [
+    <<EOF
+image:
+  tag: "v${local.velero_release.application_version}"
+EOF
+  ])
   depends_on = [kubernetes_secret.velero_repo_credentials]
 }
 

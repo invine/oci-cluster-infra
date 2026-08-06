@@ -11,11 +11,8 @@ resource "helm_release" "argocd" {
   version    = var.argocd_version
   namespace  = kubernetes_namespace.argocd.metadata[0].name
 
-  values = [
+  values = concat([
     <<EOF
-  crds:
-    install: true
-    keep: true
   configs:
     params:
       server.insecure: true
@@ -29,7 +26,13 @@ resource "helm_release" "argocd" {
         acme.cert-manager.io/http01-edit-in-place: "true" # important to merge with existing ingress resource into a single nginx config file
         cert-manager.io/cluster-issuer: ${var.lets_encrypt_issuer_name}
   EOF
-  ]
+    ], var.argocd_version == "7.6.12" ? [] : [
+    <<EOF
+  crds:
+    install: true
+    keep: true
+  EOF
+  ])
 
   depends_on = [
     helm_release.nginx_ingress,

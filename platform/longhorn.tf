@@ -24,17 +24,12 @@ resource "helm_release" "longhorn" {
   version    = var.longhorn_version
   namespace  = kubernetes_namespace.longhorn.metadata[0].name
 
-  values = [
+  values = concat([
     <<EOF
-preUpgradeChecker:
-  jobEnabled: true
-  upgradeVersionCheck: true
-
 image:
   longhorn:
     backingImageManager:
       repository: ${local.longhorn_image_repository_prefix}/backing-image-manager
-      tag: ${local.longhorn_backing_image_manager_tag}
     engine:
       repository: ${local.longhorn_image_repository_prefix}/longhorn-engine
     instanceManager:
@@ -66,14 +61,29 @@ defaultSettings:
   allowVolumeCreationWithDegradedAvailability: false
   replicaSoftAntiAffinity: false
   replicaAutoBalance: best-effort
-  concurrentAutomaticEngineUpgradePerNodeLimit: 0
-  v2DataEngine: false
 
 persistence:
   defaultClass: true
   defaultClassReplicaCount: 3
   defaultDataLocality: disabled
+EOF
+    ], var.longhorn_version == "1.7.2" ? [] : [
+    <<EOF
+preUpgradeChecker:
+  jobEnabled: true
+  upgradeVersionCheck: true
+
+image:
+  longhorn:
+    backingImageManager:
+      tag: ${local.longhorn_backing_image_manager_tag}
+
+defaultSettings:
+  concurrentAutomaticEngineUpgradePerNodeLimit: 0
+  v2DataEngine: false
+
+persistence:
   dataEngine: v1
 EOF
-  ]
+  ])
 }
