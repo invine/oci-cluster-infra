@@ -60,6 +60,9 @@ invalidates approval for the former plan.
 | Variable-set reference, no values | `<protected reference>` |
 | Saved-plan private path | `<protected reference>` |
 | Saved-plan SHA-256 | `<sha256>` |
+| Validator command/version | `<command and Infrastructure revision>` |
+| Validator result / reported SHA-256 | `<PASS/STOP, sha256>` |
+| Independent SHA-256 equals validator SHA-256 | `<yes or STOP>` |
 | Plan creation UTC | `<timestamp>` |
 | Effect summary by resource | `<create/update/destroy/replacement>` |
 | Expected phase shape matched | `<yes/no + rationale>` |
@@ -112,6 +115,20 @@ not restoreability.
 
 ## Approval Gate 1 — Starting Baseline
 
+### Security-list ownership prerequisite
+
+| Field | Value |
+| --- | --- |
+| Ticket 36 full Platform plan SHA-256 | `<sha256>` |
+| Only NGINX Helm annotation changes in place | `<pass or STOP>` |
+| Exact approved artifact applied / SHA equality | `<result>` |
+| Management mode observed as `None` | `<result>` |
+| Service/LB identity, address, selectors and ports unchanged | `<result>` |
+| Controller, routes, TLS and functional checks | `<pass or STOP>` |
+| Fresh Service and security-list evidence | `<protected refs/checksums>` |
+| Follow-up full Platform no-change plan | `<sha256/result>` |
+| Rollback plan/approval, if required | `<none or protected reference>` |
+
 - [ ] Complete health snapshot passes on `ACTIVE` `v1.34.2` and three Ready
   `v1.34.2` workers.
 - [ ] APIs/admission and every Shared Platform Service pass.
@@ -120,16 +137,25 @@ not restoreability.
 - [ ] All Applications are Healthy/Synced at recorded revisions.
 - [ ] All endpoint and functional checks pass.
 - [ ] Fresh backup table passes for all three stateful namespaces.
-- [ ] Full Infrastructure and Platform plans show no unexplained drift.
-- [ ] State-address plan shows only preservation at the `v1.34.2` map address.
+- [ ] The post-prerequisite full Platform plan is empty.
+- [ ] The Gate 1 validator passes the exact saved Infrastructure plan and its
+  reported SHA-256 equals an independently computed SHA-256.
+- [ ] The retained pool moves to the `v1.34.2` map address with no pool change.
+- [ ] Security-list removals are only the still-present subset of the six
+  captured Service rules; no rule is added or otherwise changed.
+- [ ] Kubeconfig replacement is alias-only, preserves endpoint, CA data,
+  cluster OCID, region, auth command/arguments, and path, and results in `0600`
+  mode.
+- [ ] No other Infrastructure effect is present.
 
 | Approval field | Value |
 | --- | --- |
 | Evidence snapshot/checksum | `<value>` |
 | Bound plan SHA-256 | `<value>` |
 | Approver / decision / UTC | `<value>` |
-| Action authorization | `<state-address action, name, UTC>` |
-| Apply/result reference | `<value>` |
+| Action authorization | `<exact saved Gate 1 plan, name, UTC>` |
+| Applied SHA-256 equals approved SHA-256 | `<yes or STOP>` |
+| Apply/result reference | `<protected reference>` |
 | Follow-up full no-change plan | `<sha256/result>` |
 
 ## Shared Platform Service hop records
@@ -182,6 +208,7 @@ does not begin until the current row passes.
 | --- | --- |
 | Full creation-plan SHA-256 and approval | `<value>` |
 | Expected add-only effect | `<pass/STOP>` |
+| Disposition throughout creation and qualification | `<candidate or STOP>` |
 | Pool OCID/name/version/size | `<v1.36.1, exactly 3>` |
 | Exact image OCID and validated metadata | `<value>` |
 | Availability-domain placement and rationale | `<value>` |
@@ -191,6 +218,8 @@ does not begin until the current row passes.
 | Longhorn nodes/disks/capacity | `<value>` |
 | Complete health/functional snapshot | `<ref>` |
 | Fresh backup evidence | `<ref>` |
+| Candidate-to-retained configuration revision | `<sha>` |
+| Retained-disposition full no-change plan | `<sha256/pass or STOP>` |
 
 ## Approval Gate 5 — First Old-Worker Cordon
 

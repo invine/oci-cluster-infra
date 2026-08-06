@@ -12,7 +12,7 @@ How should Terraform represent the `v1.35.2` and `v1.36.1` control-plane hops, e
 
 Separate the control-plane target from worker-pool generations. Terraform must expose one independently changeable `control_plane_kubernetes_version` and a version-keyed `worker_pools` map implemented with `for_each`. Do not encode the upgrade as a single shared Kubernetes version, an `upgrade_phase` switch, or additional duplicated legacy/new pool resources.
 
-Each `worker_pools` entry must declare at least its stable OCI name, Kubernetes version, size and exact OKE worker image OCID. The map key is the immutable Kubernetes generation, including `"v1.34.2"` and `"v1.36.1"` for this upgrade. Both entries may coexist, making paid blue/green capacity and worker-only rollback explicit in desired state.
+Each `worker_pools` entry must declare at least its stable OCI name, Kubernetes version, size and exact OKE worker image OCID. The map key is the immutable Kubernetes generation, including `"v1.34.2"` and `"v1.36.1"` for this upgrade. Both entries may coexist, making paid blue/green capacity and worker-only rollback explicit in Terraform configuration.
 
 ### Fail-closed worker images
 
@@ -51,3 +51,14 @@ After the Migration Acceptance Gate confirms that all Application Workloads and 
 2. Remove only the `v1.34.2` entry. The full plan must show destruction of only the old pool; any additional change stops cleanup.
 
 Apply the second change immediately after its plan is approved. Re-run the post-removal verification defined by the migration-gates ticket. Once the old pool is deleted, worker rollback is no longer available and subsequent failures use forward repair and the accepted backup posture.
+
+## Comments
+
+- 2026-08-06 Gate 1 execution refined the fail-closed image decision after OCI
+  retired the correctly pinned image used by the running `v1.34.2` pool from
+  its currently available worker-image catalog. Each entry now has an explicit
+  Candidate or Retained Worker Pool disposition. Both validate refreshed pool
+  identity and image metadata; only candidates additionally require current
+  catalog availability. A candidate becomes retained only after qualification.
+  This preserves creation safety without making catalog retirement invalidate
+  an unchanged running pool. Ticket 35 implements the refinement.

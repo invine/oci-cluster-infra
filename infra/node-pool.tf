@@ -3,18 +3,24 @@
 locals {
   approved_worker_image_name_prefix = "Oracle-Linux-8."
 
+  candidate_worker_pools = {
+    for generation, pool in var.worker_pools : generation => pool
+    if pool.disposition == "candidate"
+  }
+
   matching_worker_image_sources = {
-    for generation, pool in var.worker_pools : generation => [
-      for source in data.oci_containerengine_node_pool_option.worker_images.sources : source
+    for generation, pool in local.candidate_worker_pools : generation => [
+      for source in data.oci_containerengine_node_pool_option.worker_images[0].sources : source
       if source.image_id == pool.image_ocid &&
       source.source_type == "IMAGE" &&
-      startswith(source.source_name, local.approved_worker_image_name_prefix) &&
-      strcontains(source.source_name, "-OKE-${trimprefix(pool.kubernetes_version, "v")}-")
+      source.source_name == pool.image_name
     ]
   }
 }
 
 data "oci_containerengine_node_pool_option" "worker_images" {
+  count = length(local.candidate_worker_pools) > 0 ? 1 : 0
+
   compartment_id      = oci_identity_compartment.k8s_compartment.id
   node_pool_option_id = "all"
 }
@@ -69,8 +75,25 @@ resource "oci_containerengine_node_pool" "worker_pool" {
     prevent_destroy       = true
 
     precondition {
-      condition     = length(local.matching_worker_image_sources[each.key]) == 1
+      condition = (
+        each.value.disposition == "retained" ||
+        length(lookup(local.matching_worker_image_sources, each.key, [])) == 1
+      )
       error_message = "Worker pool ${each.key} image_ocid must resolve to an available ${local.approved_worker_image_name_prefix}x OKE image for Kubernetes ${each.value.kubernetes_version}."
+    }
+
+    postcondition {
+      condition = (
+        self.name == each.value.name &&
+        self.kubernetes_version == each.value.kubernetes_version &&
+        self.node_config_details[0].size == each.value.size &&
+        self.node_image_id == each.value.image_ocid &&
+        length(self.node_source) == 1 &&
+        self.node_source[0].image_id == each.value.image_ocid &&
+        self.node_source[0].source_type == "IMAGE" &&
+        self.node_source[0].source_name == each.value.image_name
+      )
+      error_message = "Worker pool ${each.key} live identity or image metadata does not match its pinned declaration."
     }
   }
 

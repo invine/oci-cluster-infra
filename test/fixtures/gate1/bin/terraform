@@ -1,0 +1,5 @@
+#!/bin/sh
+
+set -eu
+
+exec /bin/cat "$GATE1_PLAN_JSON_FIXTURE"

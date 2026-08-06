@@ -118,12 +118,14 @@ variable "kubernetes_public_ip_enables" {
 }
 
 variable "worker_pools" {
-  description = "Worker pools keyed by their immutable Kubernetes generation. Each image OCID is pinned and validated against OCI's OKE image catalog."
+  description = "Worker pools keyed by their immutable Kubernetes generation. Candidates require current catalog availability; retained pools validate their refreshed image identity."
   type = map(object({
     name               = string
     kubernetes_version = string
     size               = number
     image_ocid         = string
+    image_name         = string
+    disposition        = string
   }))
 
   validation {
@@ -145,9 +147,19 @@ variable "worker_pools" {
   validation {
     condition = alltrue([
       for pool in values(var.worker_pools) :
-      can(regex("^ocid1\\.image\\.", pool.image_ocid))
+      can(regex("^ocid1\\.image\\.", pool.image_ocid)) &&
+      startswith(pool.image_name, "Oracle-Linux-8.") &&
+      strcontains(pool.image_name, "-OKE-${trimprefix(pool.kubernetes_version, "v")}-")
     ])
-    error_message = "Each worker pool must pin an OCI image OCID."
+    error_message = "Each worker pool must pin an OCI image OCID and exact Oracle Linux 8 OKE image name for its Kubernetes version."
+  }
+
+  validation {
+    condition = alltrue([
+      for pool in values(var.worker_pools) :
+      contains(["candidate", "retained"], pool.disposition)
+    ])
+    error_message = "Each worker pool disposition must be candidate or retained."
   }
 }
 

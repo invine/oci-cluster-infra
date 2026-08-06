@@ -1,16 +1,20 @@
 # 20 — Pass the starting gate and migrate the pool state address
 
-**What to build:** Establish the complete production baseline, record Approval Gate 1, and apply only the declarative Infrastructure State address move that preserves the existing `v1.34.2` worker pool.
+**What to build:** Establish the complete production baseline, record Approval Gate 1, and apply the exact validated full Infrastructure plan that preserves the existing `v1.34.2` worker pool, reconciles redundant controller-created security rules, and accepts only a semantically equivalent kubeconfig replacement.
 
-**Blocked by:** 19 — Publish and validate the operator package
+**Blocked by:** 19 — Publish and validate the operator package; 35 — Prepare Gate 1 plan remediation; 36 — Disable OKE security-list management
 
 **Status:** ready-for-human
 
-- [ ] No command that mutates Infrastructure State or Live State runs until the human approves the exact starting evidence and saved full plan.
+- [ ] No command that mutates Infrastructure State or Live State runs until the human approves the exact starting evidence, the saved full plan's SHA-256, and the validator result.
 - [ ] The baseline proves the cluster, existing workers, APIs/admission components, Shared Platform Services, Longhorn storage, Argo Applications, ingress, Application Workloads, backups, repositories, and Backup Storage Location satisfy Approval Gate 1.
 - [ ] OCI still offers exact next hop `v1.35.2`, and current OKE skew rules permit the approved retained-worker sequence.
 - [ ] Fresh backups for `staging`, `vaultwarden`, and `openvpn` are recorded as `Completed` with zero errors and warnings; restoreability is explicitly recorded as unproven.
-- [ ] The approved full Infrastructure plan shows only preservation through the intended state-address move and no OCI resource creation, update, replacement, or destruction.
+- [ ] The Gate 1 validator proves that every worker-pool identity and configuration invariant is unchanged, the existing pool is preserved through the intended state-address move, and no pool is created, updated, replaced, or destroyed.
+- [ ] After canonicalization, the only permitted semantic OCI security-list effects are removal of any still-present subset of the initially captured NGINX HTTP, HTTPS, and health-check port rules from each relevant list; no effective base rule is added, removed, broadened, narrowed, or changed.
+- [ ] Kubeconfig replacement is accepted only when endpoint, certificate authority data, cluster OCID, region, authentication command and arguments, and output path are unchanged, the resulting mode is `0600`, and content differences are limited to internally consistent aliases.
+- [ ] The approved full Infrastructure plan contains no resource action outside the state-address preservation, removal of any still-present subset of the six initially captured redundant rules, and semantically equivalent kubeconfig replacement.
+- [ ] Terraform applies the exact saved plan artifact whose SHA-256, evidence, and validator result were approved; any regenerated plan requires fresh validation and approval.
 - [ ] After the authorized apply, a second full plan reports no changes.
 - [ ] Any unexpected drift or plan effect pauses the ticket without applying or using `terraform -target`.
 
@@ -49,3 +53,9 @@
   follow-up plan was attempted. Gate 1 remains open pending human-reviewed
   remediation of the image-validation conflict and unrelated plan effects,
   followed by a complete fresh evidence snapshot and new full plans.
+- 2026-08-06 remediation design approved. Ticket 35 prepares explicit Candidate
+  and Retained Worker Pool validation, exclusive Terraform security-list
+  ownership configuration, and the saved-plan validator without state or live
+  mutation. Ticket 36 then disables OKE security-list management through an
+  isolated approved Platform apply. Gate 1 will be retried only after both
+  prerequisites resolve and all evidence and plans are freshly captured.

@@ -19,5 +19,7 @@ worker_pools = {
     kubernetes_version = "v1.34.2"
     size               = 3
     image_ocid         = "ocid1.image.oc1.<region>.<approved-image-ocid>"
+    image_name         = "Oracle-Linux-8.x-<arch>-<date>-<build>-OKE-1.34.2-<revision>"
+    disposition        = "retained"
   }
 }

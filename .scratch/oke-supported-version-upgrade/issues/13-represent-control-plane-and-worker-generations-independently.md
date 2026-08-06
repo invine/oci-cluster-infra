@@ -23,3 +23,9 @@
 - Added the declarative move from `oci_containerengine_node_pool.oke-node-pool-bluegreen[0]` to `oci_containerengine_node_pool.worker_pool["v1.34.2"]`, with `create_before_destroy` and `prevent_destroy` enabled.
 - `terraform fmt -check -recursive`, `terraform -chdir=infra validate`, `terraform -chdir=platform validate`, and `git diff --check` passed. The required two-axis review reported zero Standards findings and zero Spec findings.
 - No Terraform plan, apply, import, state command, or live OCI, Kubernetes, Platform State, Infrastructure State, or Argo CD mutation was performed.
+- 2026-08-06 Gate 1 showed that catalog availability was too strong for the
+  already-running pool: its exact pinned image and metadata still matched Live
+  State after OCI stopped advertising the image for new provisioning. Ticket
+  35 preserves this ticket's fail-closed identity checks while distinguishing
+  Candidate Worker Pools, which require current catalog availability, from
+  Retained Worker Pools, which do not.

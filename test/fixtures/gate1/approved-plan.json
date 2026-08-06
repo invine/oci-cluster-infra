@@ -1,0 +1,162 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.15.5",
+  "applyable": true,
+  "complete": true,
+  "errored": false,
+  "variables": {
+    "private_subnet_cidr": { "value": "10.0.4.0/22" },
+    "public_subnet_cidr": { "value": "10.0.8.0/24" }
+  },
+  "resource_changes": [
+    {
+      "address": "oci_containerengine_node_pool.worker_pool[\"v1.34.2\"]",
+      "previous_address": "oci_containerengine_node_pool.oke-node-pool-bluegreen[0]",
+      "mode": "managed",
+      "type": "oci_containerengine_node_pool",
+      "name": "worker_pool",
+      "index": "v1.34.2",
+      "change": {
+        "actions": ["no-op"],
+        "before": {
+          "id": "ocid1.nodepool.example.retained",
+          "name": "prod-cluster-pool-v134",
+          "kubernetes_version": "v1.34.2",
+          "node_image_id": "ocid1.image.example.retained",
+          "node_image_name": "Oracle-Linux-8.10-aarch64-2025.11.20-0-OKE-1.34.2-1345",
+          "node_source": [{ "image_id": "ocid1.image.example.retained", "source_name": "Oracle-Linux-8.10-aarch64-2025.11.20-0-OKE-1.34.2-1345", "source_type": "IMAGE" }],
+          "node_source_details": [{ "boot_volume_size_in_gbs": "", "image_id": "ocid1.image.example.retained", "source_type": "IMAGE" }],
+          "node_config_details": [{ "size": 3, "placement_configs": [{ "availability_domain": "AD-1", "subnet_id": "subnet-private" }], "node_pool_pod_network_option_details": [{ "cni_type": "OCI_VCN_IP_NATIVE", "pod_subnet_ids": ["subnet-private"] }] }],
+          "node_shape": "VM.Standard.A1.Flex",
+          "node_shape_config": [{ "memory_in_gbs": 6, "ocpus": 1 }],
+          "initial_node_labels": [{ "key": "name", "value": "prod-cluster" }],
+          "ssh_public_key": "ssh-rsa fixture"
+        },
+        "after": {
+          "id": "ocid1.nodepool.example.retained",
+          "name": "prod-cluster-pool-v134",
+          "kubernetes_version": "v1.34.2",
+          "node_image_id": "ocid1.image.example.retained",
+          "node_image_name": "Oracle-Linux-8.10-aarch64-2025.11.20-0-OKE-1.34.2-1345",
+          "node_source": [{ "image_id": "ocid1.image.example.retained", "source_name": "Oracle-Linux-8.10-aarch64-2025.11.20-0-OKE-1.34.2-1345", "source_type": "IMAGE" }],
+          "node_source_details": [{ "boot_volume_size_in_gbs": "", "image_id": "ocid1.image.example.retained", "source_type": "IMAGE" }],
+          "node_config_details": [{ "size": 3, "placement_configs": [{ "availability_domain": "AD-1", "subnet_id": "subnet-private" }], "node_pool_pod_network_option_details": [{ "cni_type": "OCI_VCN_IP_NATIVE", "pod_subnet_ids": ["subnet-private"] }] }],
+          "node_shape": "VM.Standard.A1.Flex",
+          "node_shape_config": [{ "memory_in_gbs": 6, "ocpus": 1 }],
+          "initial_node_labels": [{ "key": "name", "value": "prod-cluster" }],
+          "ssh_public_key": "ssh-rsa fixture"
+        },
+        "after_unknown": {}
+      }
+    },
+    {
+      "address": "local_file.k8s_cluster_kube_config_file",
+      "mode": "managed",
+      "type": "local_file",
+      "name": "k8s_cluster_kube_config_file",
+      "change": {
+        "actions": ["delete", "create"],
+        "before": {
+          "content": "---\napiVersion: v1\nkind: Config\nclusters:\n- name: cluster-fixture\n  cluster:\n    server: https://api.example.invalid:6443\n    certificate-authority-data: Q0E=\nusers:\n- name: user-fixture\n  user:\n    exec:\n      apiVersion: client.authentication.k8s.io/v1beta1\n      command: oci\n      args: [ce, cluster, generate-token, --cluster-id, ocid1.cluster.example.fixture, --region, test-region-1]\n      env: []\ncontexts:\n- name: context-fixture\n  context:\n    cluster: cluster-fixture\n    user: user-fixture\ncurrent-context: context-fixture\n",
+          "filename": "./../prod-cluster_kubeconfig",
+          "file_permission": "0600",
+          "directory_permission": "0777",
+          "content_base64": null,
+          "sensitive_content": null,
+          "source": null
+        },
+        "after": {
+          "content": "---\napiVersion: v1\nkind: Config\nclusters:\n- name: cluster-prod-cluster-fixture\n  cluster:\n    server: https://api.example.invalid:6443\n    certificate-authority-data: Q0E=\nusers:\n- name: user-fixture\n  user:\n    exec:\n      apiVersion: client.authentication.k8s.io/v1beta1\n      command: oci\n      args: [ce, cluster, generate-token, --cluster-id, ocid1.cluster.example.fixture, --region, test-region-1]\n      env: []\ncontexts:\n- name: context-prod-cluster-fixture\n  context:\n    cluster: cluster-prod-cluster-fixture\n    user: user-fixture\ncurrent-context: context-prod-cluster-fixture\n",
+          "filename": "./../prod-cluster_kubeconfig",
+          "file_permission": "0600",
+          "directory_permission": "0777",
+          "content_base64": null,
+          "sensitive_content": null,
+          "source": null
+        },
+        "after_unknown": {
+          "id": true,
+          "content_sha256": true
+        }
+      }
+    },
+    {
+      "address": "oci_core_security_list.private-security-list",
+      "mode": "managed",
+      "type": "oci_core_security_list",
+      "name": "private-security-list",
+      "change": {
+        "actions": ["update"],
+        "before": {
+          "id": "private-list",
+          "compartment_id": "compartment",
+          "vcn_id": "vcn",
+          "display_name": "private-security-list",
+          "freeform_tags": {},
+          "ingress_security_rules": [
+            { "description": "", "protocol": "all", "source": "0.0.0.0/0", "source_type": "CIDR_BLOCK", "stateless": false, "icmp_options": [], "tcp_options": [], "udp_options": [] },
+            { "description": "", "protocol": "6", "source": "10.0.8.0/24", "source_type": "CIDR_BLOCK", "stateless": false, "icmp_options": [], "tcp_options": [{ "min": 30837, "max": 30837, "source_port_range": [] }], "udp_options": [] },
+            { "description": "", "protocol": "6", "source": "10.0.8.0/24", "source_type": "CIDR_BLOCK", "stateless": false, "icmp_options": [], "tcp_options": [{ "min": 31980, "max": 31980, "source_port_range": [] }], "udp_options": [] },
+            { "description": "", "protocol": "6", "source": "10.0.8.0/24", "source_type": "CIDR_BLOCK", "stateless": false, "icmp_options": [], "tcp_options": [{ "min": 32214, "max": 32214, "source_port_range": [] }], "udp_options": [] }
+          ],
+          "egress_security_rules": [{ "description": "", "destination": "0.0.0.0/0", "destination_type": "CIDR_BLOCK", "protocol": "all", "stateless": false, "icmp_options": [], "tcp_options": [], "udp_options": [] }]
+        },
+        "after": {
+          "id": "private-list",
+          "compartment_id": "compartment",
+          "vcn_id": "vcn",
+          "display_name": "private-security-list",
+          "freeform_tags": {},
+          "ingress_security_rules": [{ "description": null, "protocol": "all", "source": "0.0.0.0/0", "source_type": "CIDR_BLOCK", "stateless": false, "icmp_options": [], "tcp_options": [], "udp_options": [] }],
+          "egress_security_rules": [{ "description": null, "destination": "0.0.0.0/0", "destination_type": "CIDR_BLOCK", "protocol": "all", "stateless": false, "icmp_options": [], "tcp_options": [], "udp_options": [] }]
+        },
+        "after_unknown": {}
+      }
+    },
+    {
+      "address": "oci_core_security_list.public-security-list",
+      "mode": "managed",
+      "type": "oci_core_security_list",
+      "name": "public-security-list",
+      "change": {
+        "actions": ["update"],
+        "before": {
+          "id": "public-list",
+          "compartment_id": "compartment",
+          "vcn_id": "vcn",
+          "display_name": "public-security-list",
+          "freeform_tags": {},
+          "ingress_security_rules": [{ "description": "", "protocol": "6", "source": "0.0.0.0/0", "source_type": "CIDR_BLOCK", "stateless": false, "icmp_options": [], "tcp_options": [{ "min": 443, "max": 443, "source_port_range": [] }], "udp_options": [] }],
+          "egress_security_rules": [
+            { "description": "", "destination": "0.0.0.0/0", "destination_type": "CIDR_BLOCK", "protocol": "all", "stateless": false, "icmp_options": [], "tcp_options": [], "udp_options": [] },
+            { "description": "", "destination": "10.0.4.0/22", "destination_type": "CIDR_BLOCK", "protocol": "6", "stateless": false, "icmp_options": [], "tcp_options": [{ "min": 30837, "max": 30837, "source_port_range": [] }], "udp_options": [] },
+            { "description": "", "destination": "10.0.4.0/22", "destination_type": "CIDR_BLOCK", "protocol": "6", "stateless": false, "icmp_options": [], "tcp_options": [{ "min": 31980, "max": 31980, "source_port_range": [] }], "udp_options": [] },
+            { "description": "", "destination": "10.0.4.0/22", "destination_type": "CIDR_BLOCK", "protocol": "6", "stateless": false, "icmp_options": [], "tcp_options": [{ "min": 32214, "max": 32214, "source_port_range": [] }], "udp_options": [] }
+          ]
+        },
+        "after": {
+          "id": "public-list",
+          "compartment_id": "compartment",
+          "vcn_id": "vcn",
+          "display_name": "public-security-list",
+          "freeform_tags": {},
+          "ingress_security_rules": [{ "description": null, "protocol": "6", "source": "0.0.0.0/0", "source_type": "CIDR_BLOCK", "stateless": false, "icmp_options": [], "tcp_options": [{ "min": 443, "max": 443, "source_port_range": [] }], "udp_options": [] }],
+          "egress_security_rules": [{ "description": null, "destination": "0.0.0.0/0", "destination_type": "CIDR_BLOCK", "protocol": "all", "stateless": false, "icmp_options": [], "tcp_options": [], "udp_options": [] }]
+        },
+        "after_unknown": {}
+      }
+    },
+    {
+      "address": "oci_containerengine_cluster.k8s_cluster",
+      "mode": "managed",
+      "type": "oci_containerengine_cluster",
+      "name": "k8s_cluster",
+      "change": {
+        "actions": ["no-op"],
+        "before": { "id": "cluster" },
+        "after": { "id": "cluster" },
+        "after_unknown": {}
+      }
+    }
+  ]
+}

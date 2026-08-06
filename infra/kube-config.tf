@@ -4,6 +4,7 @@ data "oci_containerengine_cluster_kube_config" "k8s_cluster_kube_config" {
 }
 
 resource "local_file" "k8s_cluster_kube_config_file" {
-  content  = data.oci_containerengine_cluster_kube_config.k8s_cluster_kube_config.content
-  filename = "${path.module}/../${oci_containerengine_cluster.k8s_cluster.name}_kubeconfig"
+  content         = data.oci_containerengine_cluster_kube_config.k8s_cluster_kube_config.content
+  filename        = "${path.module}/../${oci_containerengine_cluster.k8s_cluster.name}_kubeconfig"
+  file_permission = "0600"
 }

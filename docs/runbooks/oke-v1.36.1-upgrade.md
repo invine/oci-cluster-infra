@@ -26,12 +26,15 @@ mutation.
 
 **Live Cluster Execution** begins only when a named operator has received
 explicit human authorization for the exact next action. Before execution, all
-of preparation tickets 13 through 19 must be resolved and the following
-artifacts must exist at the same reviewed Git revision:
+of preparation tickets 13 through 19 and ticket 35 must be resolved and the
+following artifacts must exist at the same reviewed Git revision:
 
 - Infrastructure configuration with independent control-plane and version-keyed
-  worker-pool inputs, exact image validation, the declarative old-pool address
-  move, and worker destruction protection;
+  Candidate and Retained Worker Pool inputs, disposition-aware exact image
+  validation, the declarative Retained Worker Pool address move, and worker destruction
+  protection;
+- the Gate 1 saved-plan validator and its non-sensitive positive and negative
+  fixtures;
 - [`longhorn-upgrade.md`](longhorn-upgrade.md);
 - [`velero-upgrade.md`](velero-upgrade.md);
 - [`cert-manager-upgrade.md`](cert-manager-upgrade.md);
@@ -53,18 +56,20 @@ Backup Store access only.
 
 Execute in this order, without combining phases or substituting versions:
 
-1. pass the starting baseline and preserve the existing worker-pool state
+1. establish exclusive Terraform security-list ownership through ticket 36;
+2. pass the starting baseline and preserve the existing worker-pool state
    address;
-2. upgrade Shared Platform Services serially: Longhorn, Velero, cert-manager,
+3. upgrade Shared Platform Services serially: Longhorn, Velero, cert-manager,
    F5 NGINX Ingress Controller, then Argo CD;
-3. upgrade the control plane `v1.34.2 → v1.35.2 → v1.36.1`;
-4. create one three-node `v1.36.1` worker pool directly; never create a
+4. upgrade the control plane `v1.34.2 → v1.35.2 → v1.36.1`;
+5. create one three-node `v1.36.1` Candidate Worker Pool directly; never create a
    `v1.35.2` worker pool;
-5. qualify the new pool and migrate one old worker at a time;
-6. pass Migration Acceptance;
-7. weaken old-pool destruction protection in a no-change phase, then retire
+6. qualify the Candidate Worker Pool, mark it retained through a
+   no-Infrastructure-change plan, and migrate one Retained Worker at a time;
+7. pass Migration Acceptance;
+8. weaken Retained Worker Pool destruction protection in a no-change phase, then retire
    only the `v1.34.2` pool in a separate destruction-only phase; and
-8. verify the remaining cluster and hand off the complete evidence package.
+9. verify the remaining cluster and hand off the complete evidence package.
 
 Never downgrade the OKE control plane. Worker-only rollback remains available
 only while the old pool exists.
@@ -102,8 +107,9 @@ workload-related gate. A materially different revision invalidates the prior
 workload evidence; stop for a new readiness review rather than assuming the old
 assessment still applies.
 
-An approval applies only to the exact saved full plan and evidence named in its
-record. It is invalidated by relevant drift; any failed or stale check; any
+An approval applies only to the exact saved full plan artifact, its SHA-256,
+and the evidence named in its record. Apply that exact saved plan file rather
+than generating a new plan. Approval is invalidated by relevant drift; any failed or stale check; any
 configuration, provider, variable, image, CRD, or plan change; plan
 regeneration; a change in OCI version availability or worker-skew support; a
 changed node identity or placement; or a materially changed reconciled
@@ -114,7 +120,7 @@ obtain new approval. Approval never survives an unexplained discrepancy.
 
 | Gate | Boundary | Minimum bound evidence |
 | --- | --- | --- |
-| **1 — Starting Baseline** | Before the first state-address or platform mutation | Complete baseline, fresh backups, no unexplained drift, and the state-address preservation plan |
+| **1 — Starting Baseline** | After the security-list ownership prerequisite and before the first Infrastructure State or platform-upgrade mutation | Complete baseline, fresh backups, machine-validated allowlisted Infrastructure plan, and state-address preservation |
 | **2 — Platform Complete** | After all service hops and before any control-plane plan/apply | Exact final platform versions and CRDs, all service exit gates, complete cluster/workload/functional health, and fresh backups |
 | **3 — v1.35.2 Control Plane** | Before applying the first control-plane hop | Current Gate 2 health, OCI offering `v1.35.2`, exact full Infrastructure plan, expected effects, and old-pool preservation |
 | **4 — v1.36.1 Control Plane** | Before applying the second control-plane hop | `ACTIVE` `v1.35.2` cluster, repeated complete health, OCI offering exact `v1.36.1`, revalidated temporary `v1.34.2` worker skew, and exact full plan |
@@ -143,13 +149,37 @@ effects, not merely Terraform expression changes. Fail closed if a plan:
 
 | Phase | Expected full-plan effects |
 | --- | --- |
-| Existing-pool address preservation | State address moves to the `v1.34.2` map entry with no OCI mutation; the immediately following full plan is empty |
+| Security-list ownership prerequisite | Only the NGINX Helm release changes in place to set OKE security-rule management mode to `None`; Service and LoadBalancer identities, addresses, ports, selectors, chart, and application version do not change |
+| Existing-pool address preservation | State address moves to the retained `v1.34.2` map entry; after canonicalization, at most the still-present subset of six initially captured redundant security-list rules is removed; kubeconfig replacement changes only aliases and retains its security contract; the immediately following full plan is empty |
 | Platform hop | Only the named service's exact next Helm/CRD/configuration set changes; no unrelated platform resource or Explicit Secret changes |
 | `v1.35.2` control plane | Only the OKE control plane advances to `v1.35.2`; the `v1.34.2` worker entry, image, size, and placement remain unchanged |
 | `v1.36.1` control plane | Only the OKE control plane advances to exact `v1.36.1`; the retained `v1.34.2` pool remains unchanged |
 | New worker pool | Adds only one three-node `v1.36.1` pool with the exact reviewed image and placement; does not create `v1.35.2` workers or change the old pool |
 | Remove old-pool protection | Both pool entries remain configured and the plan reports no live resource change |
 | Retire old pool | Destroys only the `v1.34.2` worker pool; any other effect stops retirement |
+
+## Security-list ownership prerequisite
+
+Ticket 36 is a human-operated Platform change that must finish before Gate 1.
+Capture the current F5 NGINX Service and Generated OCI Load Balancer identity,
+address, selectors, frontend ports, NodePorts, health-check port, and the two
+Terraform-owned security lists. Review a full saved Platform plan whose only
+effect is an in-place NGINX Helm release update setting
+`oci.oraclecloud.com/security-rule-management-mode` to `None`. A chart,
+application version, release identity, Service, selector, address, port,
+Load Balancer, Explicit Secret, or other resource change fails closed.
+
+Bind approval to that plan's SHA-256 and apply only that exact saved artifact.
+After the apply, require the controller rollout to be healthy and reverify the
+captured Service and Load Balancer identity, address, selectors, frontend ports,
+NodePorts, and health-check port. Require routes, TLS, Echo, Medusa,
+Vaultwarden, and OpenVPN checks to pass. Capture fresh Service and security-list
+evidence for the Gate 1 validator.
+
+If the change or any verification fails, pause Gate 1. Restore the prior
+annotation only through a separately reviewed and authorized Platform plan.
+If the prerequisite succeeds but a later gate pauses, leave management mode at
+`None` and leave the post-change security rules in place.
 
 ## Gate 1 — Starting Baseline and state-address preservation
 
@@ -173,13 +203,30 @@ Record and require all of the following simultaneously:
   `Completed` with zero errors and warnings; each included namespace and
   timestamp is recorded; all corresponding Kopia BackupRepositories are
   `Ready`; and the Backup Storage Location is `Available`; and
-- full Infrastructure and Platform plans contain no unexplained drift.
+- the post-prerequisite full Platform plan is empty; and
+- the exact saved full Infrastructure plan passes the repository validator:
 
-Gate 1 approval binds this evidence to the full Infrastructure plan that shows
-only declarative preservation of the existing pool at its new address. After
-separate authorization, apply that exact plan, record the state result, and
-require a subsequent full no-change plan. Any OCI resource mutation or nonempty
-follow-up plan stops execution.
+  ```sh
+  scripts/validate-gate1-plan \
+    --plan /private/path/to/gate1.tfplan \
+    --service-evidence /private/path/to/nginx-service.json
+  ```
+
+  Record the validator-reported plan SHA-256 and require it to equal an
+  independently computed checksum before approval.
+
+Gate 1 approval binds this evidence to a machine-validated full Infrastructure
+plan with only these effects: the retained `v1.34.2` pool moves to its map
+address without any pool attribute change; any still-present subset of the
+three captured ingress and three captured egress rules made redundant by the
+NGINX Service is removed; and the managed kubeconfig is replaced only to
+canonicalize aliases while preserving its endpoint, CA data, cluster OCID,
+region, authentication command and arguments, and path, while requiring a
+resulting `0600` mode. Any other effect fails closed. After separate
+authorization, apply that exact saved plan,
+record that the applied SHA-256 equals the approved SHA-256, and require a
+subsequent full no-change plan. Any OCI resource mutation beyond the allowlist
+or any nonempty follow-up plan stops execution.
 
 ## Shared Platform Service sequence and Gate 2
 
@@ -236,14 +283,20 @@ rerun the complete health set. The old workers remain unchanged.
 ## Create and qualify the v1.36.1 worker pool
 
 Re-query exact approved OKE image metadata and OCI placement/capacity. Review a
-full Infrastructure plan that adds only three direct `v1.36.1` workers and
-retains the old entry unchanged. After separate authorization and apply, record
-pool/work-request IDs, image OCID, availability-domain placement, and the three
-new node identities. Require all three nodes `Ready` on exact `v1.36.1` and all
+full Infrastructure plan that adds only three direct `v1.36.1` Candidate
+Workers and retains the Retained Worker Pool entry unchanged. The Candidate disposition keeps
+exact image identity fail-closed against the refreshed OCI catalog. After
+separate authorization and apply, record pool/work-request IDs, image OCID,
+availability-domain placement, and the three new node identities. Require all
+three nodes `Ready` on exact `v1.36.1` and all
 required OCI CNI, kube-proxy, OCI CSI, Longhorn manager/CSI/engine-image, F5
 NGINX, and Velero node-agent DaemonSets ready on them. Require new Longhorn nodes
 and disks ready, schedulable, and sufficiently capacitated, then rerun the full
 storage, Argo, endpoint, functional, repository, and backup checks.
+
+After qualification, change only the Candidate Worker Pool's disposition from
+`candidate` to `retained` and require a separately reviewed full Infrastructure
+no-change plan. Do not request Gate 5 approval unless that plan is empty.
 
 Do not touch an old worker until Gate 5 passes.
 

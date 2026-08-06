@@ -95,3 +95,11 @@ _Avoid_: Ordinary project file, tracked configuration example
 **Migration Acceptance Gate**:
 The condition for retiring a previous worker pool: every Application Workload is Healthy and Synced, and the declared readiness, functional, ingress, storage, and backup checks all pass.
 _Avoid_: Running pods are enough, timed observation window
+
+**Candidate Worker Pool**:
+A declared worker generation that has not yet passed its qualification gate. Its pinned image must remain currently available for creation or replacement as well as match the declared Kubernetes version and approved operating-system family.
+_Avoid_: New pool, replacement pool
+
+**Retained Worker Pool**:
+A qualified worker generation preserved for current service or worker-only rollback. Its live image identity must continue to match its pinned declaration, but the image need not remain available for new provisioning.
+_Avoid_: Old pool, legacy pool

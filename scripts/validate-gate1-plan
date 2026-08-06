@@ -1,0 +1,305 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "digest"
+require "json"
+require "open3"
+require "optparse"
+require "yaml"
+
+class Gate1ValidationError < StandardError; end
+
+class Gate1PlanValidator
+  KUBECONFIG_ADDRESS = "local_file.k8s_cluster_kube_config_file"
+  RETAINED_POOL_ADDRESS = 'oci_containerengine_node_pool.worker_pool["v1.34.2"]'
+  RETAINED_POOL_PREVIOUS_ADDRESS = "oci_containerengine_node_pool.oke-node-pool-bluegreen[0]"
+  RETAINED_POOL_ATTRIBUTES = %w[
+    id
+    name
+    kubernetes_version
+    node_image_id
+    node_image_name
+    node_source
+    node_source_details
+    node_config_details
+    node_shape
+    node_shape_config
+    initial_node_labels
+    ssh_public_key
+  ].freeze
+  SECURITY_LISTS = {
+    "oci_core_security_list.private-security-list" => {
+      "rule_attribute" => "ingress_security_rules",
+      "peer_attribute" => "source",
+      "peer_type_attribute" => "source_type",
+      "cidr_variable" => "public_subnet_cidr"
+    },
+    "oci_core_security_list.public-security-list" => {
+      "rule_attribute" => "egress_security_rules",
+      "peer_attribute" => "destination",
+      "peer_type_attribute" => "destination_type",
+      "cidr_variable" => "private_subnet_cidr"
+    }
+  }.freeze
+  SECURITY_LIST_STABLE_ATTRIBUTES = %w[id compartment_id vcn_id display_name defined_tags freeform_tags].freeze
+  ALLOWED_ACTION_ADDRESSES = ([KUBECONFIG_ADDRESS] + SECURITY_LISTS.keys).freeze
+
+  def initialize(plan, service_evidence)
+    @plan = plan
+    @service_evidence = service_evidence
+  end
+
+  def validate!
+    validate_action_allowlist!
+    validate_kubeconfig!
+    validate_retained_pool!
+    validate_security_lists!
+  end
+
+  private
+
+  def validate_action_allowlist!
+    unrelated_action = @plan.fetch("resource_changes").any? do |resource|
+      resource.fetch("change").fetch("actions") != ["no-op"] &&
+        !ALLOWED_ACTION_ADDRESSES.include?(resource.fetch("address"))
+    end
+    fail_validation!("plan contains an unrelated resource action") if unrelated_action
+
+    worker_pools = @plan.fetch("resource_changes").select do |resource|
+      resource["type"] == "oci_containerengine_node_pool"
+    end
+    unless worker_pools.length == 1 && worker_pools.fetch(0).fetch("address") == RETAINED_POOL_ADDRESS
+      fail_validation!("plan contains an unrelated worker pool")
+    end
+  rescue KeyError
+    fail_validation!("plan contains an unrelated resource action")
+  end
+
+  def validate_kubeconfig!
+    resource = resource_change(KUBECONFIG_ADDRESS)
+    change = resource.fetch("change")
+    fail_validation!("kubeconfig action is not an approved replacement") unless change.fetch("actions") == %w[delete create]
+
+    before = change.fetch("before")
+    after = change.fetch("after")
+    stable_attributes = %w[filename directory_permission content_base64 sensitive_content source]
+    unless stable_attributes.all? { |attribute| before[attribute] == after[attribute] } && after["file_permission"] == "0600"
+      fail_validation!("kubeconfig file contract changed")
+    end
+
+    return if canonical_kubeconfig(before.fetch("content")) == canonical_kubeconfig(after.fetch("content"))
+
+    fail_validation!("kubeconfig changed beyond aliases")
+  rescue KeyError, Psych::Exception
+    fail_validation!("kubeconfig changed beyond aliases")
+  end
+
+  def canonical_kubeconfig(content)
+    config = YAML.safe_load(content, [], [], false)
+    clusters = config.fetch("clusters")
+    users = config.fetch("users")
+    contexts = config.fetch("contexts")
+    fail_validation!("kubeconfig changed beyond aliases") unless clusters.length == 1 && users.length == 1 && contexts.length == 1
+
+    cluster = clusters.fetch(0)
+    user = users.fetch(0)
+    context = contexts.fetch(0)
+    context_body = context.fetch("context")
+    unless context_body.fetch("cluster") == cluster.fetch("name") &&
+           context_body.fetch("user") == user.fetch("name") &&
+           config.fetch("current-context") == context.fetch("name")
+      fail_validation!("kubeconfig changed beyond aliases")
+    end
+
+    {
+      "document" => config.reject { |key, _value| %w[clusters users contexts current-context].include?(key) },
+      "cluster" => cluster.fetch("cluster"),
+      "user-name" => user.fetch("name"),
+      "user" => user.fetch("user"),
+      "context" => context_body.reject { |key, _value| %w[cluster user].include?(key) }
+    }
+  end
+
+  def validate_retained_pool!
+    resource = resource_change(RETAINED_POOL_ADDRESS)
+    change = resource.fetch("change")
+    unless resource["previous_address"] == RETAINED_POOL_PREVIOUS_ADDRESS && change.fetch("actions") == ["no-op"]
+      fail_validation!("retained worker pool move is missing")
+    end
+
+    before = change.fetch("before")
+    after = change.fetch("after")
+    return if RETAINED_POOL_ATTRIBUTES.all? { |attribute| before[attribute] == after[attribute] }
+
+    fail_validation!("retained worker pool changed")
+  rescue KeyError
+    fail_validation!("retained worker pool changed")
+  end
+
+  def validate_security_lists!
+    ports = captured_service_ports
+    SECURITY_LISTS.each do |address, contract|
+      resource = resource_change(address)
+      change = resource.fetch("change")
+      before = change.fetch("before")
+      after = change.fetch("after")
+      unless SECURITY_LIST_STABLE_ATTRIBUTES.all? { |attribute| before[attribute] == after[attribute] }
+        fail_validation!("security list changed outside captured redundant rules")
+      end
+
+      rule_attribute = contract.fetch("rule_attribute")
+      other_rule_attribute = rule_attribute == "ingress_security_rules" ? "egress_security_rules" : "ingress_security_rules"
+      unless rule_counts(before[other_rule_attribute]) == rule_counts(after[other_rule_attribute])
+        fail_validation!("security list changed outside captured redundant rules")
+      end
+
+      before_counts = rule_counts(before[rule_attribute])
+      after_counts = rule_counts(after[rule_attribute])
+      additions = subtract_counts(after_counts, before_counts)
+      removals = subtract_counts(before_counts, after_counts)
+      allowed_removals = ports.map do |port|
+        canonical_rule(
+          "protocol" => "6",
+          "stateless" => false,
+          contract.fetch("peer_attribute") => variable_value(contract.fetch("cidr_variable")),
+          contract.fetch("peer_type_attribute") => "CIDR_BLOCK",
+          "tcp_options" => [{ "min" => port, "max" => port, "source_port_range" => [] }]
+        )
+      end
+
+      unless additions.empty? && removals.all? { |rule, count| count == 1 && allowed_removals.include?(rule) }
+        fail_validation!("security list changed outside captured redundant rules")
+      end
+
+      expected_actions = removals.empty? ? ["no-op"] : ["update"]
+      unless change.fetch("actions") == expected_actions
+        fail_validation!("security list changed outside captured redundant rules")
+      end
+    end
+  rescue KeyError, TypeError
+    fail_validation!("security list changed outside captured redundant rules")
+  end
+
+  def captured_service_ports
+    service = @service_evidence.fetch("items").find do |item|
+      item.dig("metadata", "namespace") == "nginx-ingress" &&
+        item.dig("metadata", "name") == "nginx-ingress-controller"
+    end
+    unless service&.dig("spec", "type") == "LoadBalancer"
+      fail_validation!("captured ingress Service is missing")
+    end
+
+    service_ports = service.fetch("spec").fetch("ports")
+    expected_frontend_ports = { "http" => 80, "https" => 443 }
+    valid_frontend_ports = service_ports.length == 2 && service_ports.all? do |port|
+      expected_frontend_ports[port["name"]] == port["port"] && port["protocol"] == "TCP"
+    end
+    fail_validation!("captured ingress Service ports are invalid") unless valid_frontend_ports
+
+    ports = service_ports.map { |port| port.fetch("nodePort") }
+    ports << service.fetch("spec").fetch("healthCheckNodePort")
+    unless ports.length == 3 && ports.uniq.length == 3 && ports.all? { |port| port.is_a?(Integer) && port.positive? }
+      fail_validation!("captured ingress Service ports are invalid")
+    end
+
+    ports.sort
+  rescue KeyError, TypeError
+    fail_validation!("captured ingress Service is missing")
+  end
+
+  def variable_value(name)
+    @plan.fetch("variables").fetch(name).fetch("value")
+  end
+
+  def rule_counts(rules)
+    Array(rules).each_with_object(Hash.new(0)) do |rule, counts|
+      counts[canonical_rule(rule)] += 1
+    end
+  end
+
+  def subtract_counts(left, right)
+    left.each_with_object({}) do |(rule, count), difference|
+      remaining = count - right.fetch(rule, 0)
+      difference[rule] = remaining if remaining.positive?
+    end
+  end
+
+  def canonical_rule(rule)
+    semantic_rule = {
+      "protocol" => rule["protocol"],
+      "stateless" => rule.fetch("stateless", false),
+      "source" => rule["source"],
+      "source_type" => rule["source_type"],
+      "destination" => rule["destination"],
+      "destination_type" => rule["destination_type"],
+      "icmp_options" => canonical_options(rule["icmp_options"]),
+      "tcp_options" => canonical_options(rule["tcp_options"]),
+      "udp_options" => canonical_options(rule["udp_options"])
+    }
+    JSON.generate(semantic_rule)
+  end
+
+  def canonical_options(options)
+    Array(options).map do |option|
+      option.sort.to_h
+    end.sort_by { |option| JSON.generate(option) }
+  end
+
+  def resource_change(address)
+    @plan.fetch("resource_changes").find { |resource| resource["address"] == address } ||
+      fail_validation!("required resource change is missing")
+  end
+
+  def fail_validation!(message)
+    raise Gate1ValidationError, message
+  end
+end
+
+options = {}
+parser = OptionParser.new do |option_parser|
+  option_parser.banner = "Usage: validate-gate1-plan --plan PLAN --service-evidence SERVICE_JSON"
+  option_parser.on("--plan PATH", "Saved Terraform plan artifact") { |value| options[:plan] = value }
+  option_parser.on("--service-evidence PATH", "Captured Kubernetes Service JSON") { |value| options[:service] = value }
+end
+
+begin
+  parser.parse!
+  raise Gate1ValidationError, "missing --plan" unless options[:plan]
+  raise Gate1ValidationError, "missing --service-evidence" unless options[:service]
+
+  plan_sha256 = Digest::SHA256.file(options[:plan]).hexdigest
+  repository_root = File.expand_path("..", __dir__)
+  stdout, _stderr, status = Open3.capture3(
+    "terraform",
+    "-chdir=#{File.join(repository_root, "infra")}",
+    "show",
+    "-json",
+    File.expand_path(options[:plan])
+  )
+  raise Gate1ValidationError, "terraform show failed" unless status.success?
+  unless Digest::SHA256.file(options[:plan]).hexdigest == plan_sha256
+    raise Gate1ValidationError, "saved plan changed during validation"
+  end
+
+  plan = JSON.parse(stdout)
+  service_evidence = JSON.parse(File.read(options[:service]))
+  unless plan["applyable"] == true && plan["complete"] == true && plan["errored"] == false
+    raise Gate1ValidationError, "saved plan is not complete and applyable"
+  end
+
+  Gate1PlanValidator.new(plan, service_evidence).validate!
+
+  puts "PASS: Gate 1 plan #{plan_sha256}"
+rescue Gate1ValidationError => error
+  warn "FAIL: #{error.message}"
+  exit 1
+rescue Errno::ENOENT, Errno::EACCES
+  warn "FAIL: unable to read required local artifact"
+  exit 1
+rescue JSON::ParserError, Psych::Exception
+  warn "FAIL: required local artifact is invalid"
+  exit 1
+rescue OptionParser::ParseError
+  warn "FAIL: invalid command arguments"
+  exit 1
+end
