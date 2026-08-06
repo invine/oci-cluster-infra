@@ -4,10 +4,10 @@
 
 **Blocked by:** 19 — Publish and validate the operator package; 35 — Prepare Gate 1 plan remediation; 36 — Disable OKE security-list management
 
-**Status:** resolved
+**Status:** needs-info
 
-- [x] No command that mutates Infrastructure State or Live State runs until the human approves the exact starting evidence, the saved full plan's SHA-256, and the validator result.
-- [x] The baseline proves the cluster, existing workers, APIs/admission components, Shared Platform Services, Longhorn storage, Argo Applications, ingress, Application Workloads, backups, repositories, and Backup Storage Location satisfy Approval Gate 1.
+- [ ] No command that mutates Infrastructure State or Live State runs until the human approves the exact starting evidence, the saved full plan's SHA-256, and the validator result.
+- [ ] The baseline proves the cluster, existing workers, APIs/admission components, Shared Platform Services, Longhorn storage, Argo Applications, ingress, Application Workloads, backups, repositories, and Backup Storage Location satisfy Approval Gate 1.
 - [x] OCI still offers exact next hop `v1.35.2`, and current OKE skew rules permit the approved retained-worker sequence.
 - [x] Fresh backups for `staging`, `vaultwarden`, and `openvpn` are recorded as `Completed` with zero errors and warnings; restoreability is explicitly recorded as unproven.
 - [x] The Gate 1 validator proves that every worker-pool identity and configuration invariant is unchanged, the existing pool is preserved through the intended state-address move, and no pool is created, updated, replaced, or destroyed.
@@ -82,15 +82,25 @@
   `7229e41b07b3db2a76c11d692e544db9f1dbf3421c499790774993827b23fbf9`).
   Infrastructure State contains only the retained map address, the kubeconfig
   is mode `0600`, the cluster and all three workers remain healthy on
-  `v1.34.2`, and all post-apply platform, storage, Argo, ingress, workload,
-  backup, repository, Backup Storage Location, and OpenVPN checks passed.
+  `v1.34.2`, and the automated post-apply platform, storage, Argo, ingress,
+  workload-readiness, backup, repository, Backup Storage Location, and OpenVPN
+  checks passed.
   Protected evidence is under `/private/tmp/oke-gate1-20260807.mW1XTL`.
+- Final independent review found that the approval record was incomplete. The
+  presented package explicitly identified Vaultwarden authenticated login/item
+  read and Medusa persisted write/read as pending, but the human response
+  `proceed` authorized the exact plan without explicitly confirming those two
+  results. The apply and post-apply checks succeeded, but that cannot
+  retroactively prove the complete pre-apply functional baseline. Gate 1
+  therefore remains open pending explicit human confirmation of those checks
+  and risk-owner disposition of the approval-control deviation.
 
-## Answer
+## Current state
 
-Approval Gate 1 passed. Terraform applied the exact approved and validated full
-Infrastructure plan, preserving the existing `v1.34.2` worker pool through its
-declarative state-address move, removing only the six captured redundant
-security rules, and accepting only the semantically equivalent kubeconfig
-replacement. The mandatory follow-up full plan is empty and post-apply health
-checks pass. Restoreability remains unproven as explicitly accepted.
+Terraform applied the exact validated full Infrastructure plan, preserving the
+existing `v1.34.2` worker pool through its declarative state-address move,
+removing only the six captured redundant security rules, and accepting only the
+semantically equivalent kubeconfig replacement. The mandatory follow-up full
+plan is empty and post-apply health checks pass. Approval Gate 1 is not recorded
+as passed because two required pre-apply functional confirmations were not
+explicitly supplied. Restoreability remains unproven as explicitly accepted.
