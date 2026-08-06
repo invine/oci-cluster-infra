@@ -4,10 +4,10 @@
 
 **Blocked by:** 19 — Publish and validate the operator package; 35 — Prepare Gate 1 plan remediation; 36 — Disable OKE security-list management
 
-**Status:** needs-info
+**Status:** resolved
 
 - [ ] No command that mutates Infrastructure State or Live State runs until the human approves the exact starting evidence, the saved full plan's SHA-256, and the validator result.
-- [ ] The baseline proves the cluster, existing workers, APIs/admission components, Shared Platform Services, Longhorn storage, Argo Applications, ingress, Application Workloads, backups, repositories, and Backup Storage Location satisfy Approval Gate 1.
+- [x] The baseline proves the cluster, existing workers, APIs/admission components, Shared Platform Services, Longhorn storage, Argo Applications, ingress, Application Workloads, backups, repositories, and Backup Storage Location satisfy Approval Gate 1.
 - [x] OCI still offers exact next hop `v1.35.2`, and current OKE skew rules permit the approved retained-worker sequence.
 - [x] Fresh backups for `staging`, `vaultwarden`, and `openvpn` are recorded as `Completed` with zero errors and warnings; restoreability is explicitly recorded as unproven.
 - [x] The Gate 1 validator proves that every worker-pool identity and configuration invariant is unchanged, the existing pool is preserved through the intended state-address move, and no pool is created, updated, replaced, or destroyed.
@@ -94,13 +94,20 @@
   retroactively prove the complete pre-apply functional baseline. Gate 1
   therefore remains open pending explicit human confirmation of those checks
   and risk-owner disposition of the approval-control deviation.
+- 2026-08-06T22:19:48Z the human explicitly confirmed that Vaultwarden
+  authenticated login/item read and Medusa persisted write/read passed, and
+  accepted the approval-control deviation. Gate 1 is closed by that risk-owner
+  disposition. The exception does not rewrite history: the complete functional
+  confirmation was recorded after, rather than before, the Infrastructure
+  apply. The first acceptance item remains unchecked to preserve that fact.
 
-## Current state
+## Answer
 
 Terraform applied the exact validated full Infrastructure plan, preserving the
 existing `v1.34.2` worker pool through its declarative state-address move,
 removing only the six captured redundant security rules, and accepting only the
 semantically equivalent kubeconfig replacement. The mandatory follow-up full
-plan is empty and post-apply health checks pass. Approval Gate 1 is not recorded
-as passed because two required pre-apply functional confirmations were not
-explicitly supplied. Restoreability remains unproven as explicitly accepted.
+plan is empty and post-apply health checks pass. The risk owner confirmed the
+two credential-dependent functional checks and accepted the documented
+approval-timing deviation, so Approval Gate 1 is closed with that exception.
+Restoreability remains unproven as explicitly accepted.
