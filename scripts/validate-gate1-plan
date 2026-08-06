@@ -181,7 +181,8 @@ class Gate1PlanValidator
   end
 
   def captured_service_ports
-    service = @service_evidence.fetch("items").find do |item|
+    service_items = @service_evidence.key?("items") ? @service_evidence.fetch("items") : [@service_evidence]
+    service = service_items.find do |item|
       item.dig("metadata", "namespace") == "nginx-ingress" &&
         item.dig("metadata", "name") == "nginx-ingress-controller"
     end

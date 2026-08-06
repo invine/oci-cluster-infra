@@ -21,6 +21,14 @@ class Gate1PlanValidatorTest < Minitest::Test
     assert_empty stderr
   end
 
+  def test_approved_gate_1_plan_passes_with_a_single_service_capture
+    service = JSON.parse(File.read(SERVICE_EVIDENCE)).fetch("items").fetch(0)
+
+    status, _stdout, stderr = run_validator(APPROVED_PLAN, service: service)
+
+    assert_predicate status, :success?, stderr
+  end
+
   def test_meaningful_kubeconfig_change_fails_without_exposing_content
     plan = deep_copy(APPROVED_PLAN)
     kubeconfig_change(plan)["after"]["content"] = kubeconfig_change(plan)["after"]["content"].sub(
