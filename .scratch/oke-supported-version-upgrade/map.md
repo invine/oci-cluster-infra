@@ -4,7 +4,11 @@ Label: wayfinder:map
 
 ## Destination
 
-An approval-ready, rollback-defined plan to upgrade the production OKE cluster from Kubernetes `v1.34.2` to the frozen jointly supported target `v1.36.1`. The plan ends before any live mutation.
+An approval-ready, rollback-defined plan and evidence-controlled execution
+route to upgrade the production OKE cluster from Kubernetes `v1.34.2` to the
+frozen jointly supported target `v1.36.1`. Repository Preparation ends before
+live mutation; each Live Cluster Execution ticket proceeds only through its
+explicit human-authorized actions and current evidence.
 
 ## Notes
 
@@ -15,7 +19,9 @@ An approval-ready, rollback-defined plan to upgrade the production OKE cluster f
 - The control plane remains on the new version if worker migration fails; only workers roll back to the retained `v1.34.2` pool.
 - Use a temporary paid-capacity blue/green pool. Retire the old pool immediately after the Migration Acceptance Gate passes.
 - Require fresh successful Velero backups for every stateful Application Workload before the first disruptive step; restoreability is accepted as unproven because no restore rehearsal will be performed.
-- Planning only: do not mutate OCI, Kubernetes, Terraform state, or Argo CD.
+- Wayfinding and Repository Preparation do not mutate OCI, Kubernetes,
+  Terraform state, or Argo CD. A `ready-for-human` execution ticket may do so
+  only for the exact action and artifact explicitly authorized by a human.
 
 ## Decisions so far
 
@@ -33,6 +39,7 @@ An approval-ready, rollback-defined plan to upgrade the production OKE cluster f
 - [Decide the upgrade order and operator runbook gates](issues/08-decide-upgrade-order-and-runbook-gates.md) — execute platform upgrades, two irreversible control-plane hops, blue/green worker migration, acceptance, and guarded old-pool retirement through six evidence-bound approval gates with explicit pause, worker-only rollback, and forward-repair branches.
 - [Remediate the paused Gate 1](issues/20-pass-starting-gate-and-migrate-pool-state-address.md) — distinguish Candidate from Retained Worker Pools, give Terraform exclusive OCI security-list ownership, preserve Terraform management of the kubeconfig behind semantic comparison, and bind approval to a machine-validated saved full plan before retrying the state-address migration.
 - [Prepare the Gate 1 plan remediation](issues/35-prepare-gate-1-plan-remediation.md) — implement exact disposition-aware worker image validation, the exclusive-owner annotation, a fail-closed saved-plan validator with fixtures, and the ticket 36 prerequisite without changing Infrastructure State, Platform State, or Live State.
+- [Disable OKE security-list management](issues/36-disable-oke-security-list-management.md) — apply the isolated NGINX annotation plan, preserve Service and LoadBalancer identity and all security-list rules, pass ingress and OpenVPN verification, and require an empty follow-up Platform plan before unblocking Gate 1.
 - [Upgrade Longhorn to 1.12.0](issues/21-upgrade-longhorn-to-1-12-0.md) — complete every approved serial chart and engine hop through `1.12.0`, restore all five volumes to three healthy replicas after each hop, remove only proven-unused images, and close on healthy workloads and an empty full Platform plan while preserving the waived mandatory backup gates and incomplete per-volume audit/data-path evidence as explicit deviations.
 - [Upgrade Velero to 1.18.1](issues/22-upgrade-velero-to-1-18-1.md) — complete all four approved CRD-aware release sets through `1.18.1`, preserve exact component matching, add the two-layer OCI checksum compatibility settings required by AWS plugin `1.14.2`, and close on fresh successful namespace backups plus an empty full Platform plan without claiming restoreability.
 
@@ -42,7 +49,9 @@ An approval-ready, rollback-defined plan to upgrade the production OKE cluster f
 
 ## Out of scope
 
-- Performing the live control-plane, Shared Platform Service, or worker upgrade; this effort ends at an approved plan.
+- Performing an unapproved control-plane, Shared Platform Service, Infrastructure
+  State, or worker change. Ticket 36's ownership prerequisite and later upgrade
+  actions remain individually evidence-bound and human-authorized.
 - Downgrading or rolling back the upgraded OKE control plane.
 - Unrelated component modernization, infrastructure refactors, or ownership changes.
 - Redesigning Application Workloads for high availability solely to eliminate upgrade downtime; bounded maintenance interruptions are accepted for this effort.
