@@ -64,6 +64,13 @@ initContainers:
     name: plugins
 
 configuration:
+  # AWS SDKs released after December 2024 add CRC checksums to S3 uploads by
+  # default, even when the plugin-level checksum algorithm below is empty.
+  # OCI Object Storage rejects that AWS chunked encoding, so restrict SDK
+  # checksums to operations where the S3 API actually requires one.
+  extraEnvVars:
+    - name: AWS_REQUEST_CHECKSUM_CALCULATION
+      value: WHEN_REQUIRED
   backupStorageLocation:
     - name: "default"
       provider: "aws"
@@ -73,6 +80,7 @@ configuration:
         region: "${var.region}"
         s3Url: "https://${var.velero_backup_bucket_namespace}.compat.objectstorage.${var.region}.oraclecloud.com"
         s3ForcePathStyle: "true"
+        checksumAlgorithm: ""
 
 deployNodeAgent: true
 snapshotsEnabled: false
