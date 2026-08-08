@@ -4,7 +4,7 @@
 
 **Blocked by:** 24 — Upgrade F5 NGINX to 5.5.4
 
-**Status:** ready-for-human
+**Status:** resolved
 
 - [ ] Each Argo CD release and matching CRD hop has a separately reviewed full plan and explicit human authorization.
 - [ ] Every approved chart/application pair is applied in order without combining or substitution, with applicable upgrade notes satisfied.
@@ -129,3 +129,20 @@
   2 decision against this exact evidence and current no-change plan. The Gate 2
   decision must also resolve the OpenVPN published-endpoint mismatch; successful
   direct load-balancer connectivity is not being treated as a substitute.
+- After the published OpenVPN endpoint was repaired and Gate 6 later passed,
+  the human risk owner explicitly accepted the two remaining historical Gate 2
+  deviations: prospective rather than exact-plan-bound authorization and the
+  missing contemporaneous per-release upgrade-note evidence. This closure
+  disposition does not retroactively mark those unmet controls as satisfied or
+  rewrite the execution chronology. It resolves the Gate 2 record with the
+  deviations retained as residual process risk.
+
+## Answer
+
+Argo CD reached chart/application `10.2.3/3.5.0` through every frozen hop, all
+final platform, storage, Argo, ingress, workload, backup, repository, and
+functional checks ultimately passed, and Platform Terraform converged with no
+changes. The later OpenVPN repair removed the live functional blocker. The risk
+owner accepts the historical prospective-authorization and incomplete
+per-release upgrade-note evidence deviations, so Approval Gate 2 is closed
+with those exceptions preserved rather than retroactively treated as met.

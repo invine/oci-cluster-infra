@@ -72,7 +72,6 @@ resource "oci_containerengine_node_pool" "worker_pool" {
 
   lifecycle {
     create_before_destroy = true
-    prevent_destroy       = true
 
     precondition {
       condition = (
