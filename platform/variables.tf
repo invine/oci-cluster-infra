@@ -61,7 +61,7 @@ variable "argocd_bootstrap_repo_branch" {
 variable "argocd_version" {
   description = "Exact Argo CD Helm chart version for the current frozen serial upgrade stage."
   type        = string
-  default     = "7.6.12"
+  default     = "10.2.3"
 
   validation {
     condition = contains([
