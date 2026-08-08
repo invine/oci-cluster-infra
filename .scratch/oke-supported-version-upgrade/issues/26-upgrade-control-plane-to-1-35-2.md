@@ -4,7 +4,7 @@
 
 **Blocked by:** 25 — Upgrade Argo CD to 3.5.0 and approve platform completion
 
-**Status:** ready-for-human
+**Status:** resolved
 
 - [x] OCI is re-queried immediately before planning and still offers exact next version `v1.35.2`.
 - [ ] The full plan changes only the control-plane version; the sole worker entry remains fixed at `v1.34.2`.
@@ -45,10 +45,12 @@
   only after the second hop, and the pre-existing OpenVPN published-name
   mismatch remained. The complete post-hop health acceptance item therefore
   remains unchecked.
-- The ticket remains `ready-for-human` because Gate 3 was not bound to the exact
-  plan, the full plan also regenerated the local kubeconfig, and the complete
-  post-hop gate was not captured. Reaching `v1.35.2` is recorded as a completed
-  live result, not as proof that every process requirement passed.
+- On 2026-08-08, after the control plane reached `v1.36.1` and the deviations
+  above were recorded, the human explicitly directed the operator to resolve
+  both control-plane tickets. This is the risk owner's closure disposition for
+  the historical Gate 3 plan-binding, kubeconfig-plan-scope, and incomplete
+  post-hop evidence exceptions. It does not retroactively satisfy the three
+  unchecked acceptance items or rewrite the execution record.
 
 ## Answer
 
@@ -56,5 +58,6 @@ Production completed the supported first control-plane hop from `v1.34.2` to
 `v1.35.2` through the exact saved plan. The only OCI mutation was the control
 plane and the retained `v1.34.2` worker pool was unchanged, but the plan also
 regenerated the local kubeconfig. Gate 3's plan-hash binding and the incomplete
-post-hop health capture remain open process exceptions, so the ticket is not
-marked resolved.
+post-hop health capture remain recorded process exceptions. The risk owner
+explicitly accepted those exceptions for closure, so the ticket is resolved
+without marking the unmet historical acceptance items complete.

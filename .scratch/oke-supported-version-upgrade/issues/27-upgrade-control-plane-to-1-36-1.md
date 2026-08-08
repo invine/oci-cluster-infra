@@ -4,7 +4,7 @@
 
 **Blocked by:** 26 — Upgrade the control plane to v1.35.2
 
-**Status:** ready-for-human
+**Status:** resolved
 
 - [x] The `v1.35.2` cluster is re-queried and OCI offers exact `v1.36.1` while supporting temporary `v1.34.2` workers.
 - [x] If either condition fails, the healthy cluster remains at `v1.35.2` and target selection is reopened without substituting another patch.
@@ -55,10 +55,13 @@
   control-plane execution. This pre-existing exception was bypassed by the
   human's instruction to complete both control-plane tickets and remains open
   for later remediation.
-- The ticket remains `ready-for-human` because Gate 4 was not bound to the exact
-  plan, the full plan also regenerated the local kubeconfig, and the complete
-  credential-dependent health set did not pass. Reaching the target is recorded
-  as a completed live result, not as proof that every acceptance item passed.
+- On 2026-08-08, after the target and final no-change plan were verified and the
+  deviations above were recorded, the human explicitly directed the operator
+  to resolve both control-plane tickets. This is the risk owner's closure
+  disposition for the historical Gate 4 plan-binding, kubeconfig-plan-scope,
+  incomplete credential-dependent health, and OpenVPN published-name
+  exceptions. It does not retroactively satisfy the three unchecked acceptance
+  items or represent the OpenVPN issue as fixed.
 - The final saved full Infrastructure plan reported `No changes`, with SHA-256
   `851a8ff5ae94fba663f22c7c6dcdd1fad97179d93fd4a1a840364a0196553e65`.
   Private saved plans are stored outside the repository under the mode-`0700`
@@ -72,5 +75,7 @@ the frozen target `v1.36.1` through the exact saved plan. The only OCI mutation
 was the control plane, the retained `v1.34.2` worker pool was unchanged, and the
 follow-up full Infrastructure plan is empty. The local kubeconfig regeneration,
 prospective-approval binding deviation, incomplete credential-dependent health
-set, and pre-existing OpenVPN published-name mismatch remain open rather than
-being retroactively treated as satisfied.
+set, and pre-existing OpenVPN published-name mismatch remain recorded rather
+than being retroactively treated as satisfied. The risk owner explicitly
+accepted those exceptions for closure, so the ticket is resolved without
+marking the unmet historical acceptance items complete.
