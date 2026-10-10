@@ -8,7 +8,7 @@ local implementation qualification.
 
 **Blocked by:** None (can start immediately).
 
-**Status:** claimed
+**Status:** resolved
 
 - [x] Inspect actual OCI listeners, backend sets, backend health and LB source
   subnet(s). Verify TCP forwarding to NGINX and document any intermediary before
@@ -22,7 +22,7 @@ local implementation qualification.
 - [x] Capture the Service UID, ClusterIP, external IP, ports/NodePorts,
   selectors, ready EndpointSlices, Helm values and generated NGINX configuration
   needed to compare normal activation with its baseline.
-- [ ] Record expected HTTP, TLS, authentication and websocket behavior for all
+- [x] Record expected HTTP, TLS, authentication and websocket behavior for all
   current shared-ingress endpoints, including Argo CD, echo, Vaultwarden, relay
   portal/WSS and any additional live routes. Include relevant ACME routes.
 - [x] Verify OCI backend checks and the controller's actual health probes can
@@ -70,3 +70,28 @@ fresh full plan is reviewed. The ticket remains claimed because authenticated
 Argo CD, Vaultwarden, and relay portal behavior and an application-level relay
 WebSocket exchange have not been substantiated. No production mutation was
 performed. Preserve the private artifacts before clearing temporary storage.
+
+2026-10-10: The sole owner reports successful authenticated safe reads for
+Argo CD and Vaultwarden, relay portal login, and an application-level relay
+WebSocket exchange. These outcomes are owner-reported rather than independently
+observed by this qualification. The full private readiness note was updated;
+its current SHA-256 is
+`10315384f5b75f8bd6b688b3b8a8f3f668c7d6106d960e8159e3368306d07990`.
+The earlier note checksum above is superseded. All read-only qualification
+items are now recorded. Fresh planning from persisted inputs, staged sync,
+maintenance cutover, and production acceptance remain ticket 06 execution
+gates.
+
+## Answer
+
+The shared-ingress cutover and recovery are qualified as a read-only readiness
+package. Actual infrastructure, controller, trust boundaries, routes, health
+design, administrative access, and recovery path were assessed; the sole owner
+accepted the maintenance and health approach and reported the four remaining
+authenticated/application-level baseline checks as passed. The preliminary
+full platform preview has only one in-place ingress Helm update. The complete
+live evidence and plan remain restricted outside Git at
+`/private/tmp/echo-id-03-evidence/`; the current readiness note checksum is
+`10315384f5b75f8bd6b688b3b8a8f3f668c7d6106d960e8159e3368306d07990`.
+This resolution authorizes no production mutation. Ticket 06 must repeat the
+endpoint checks and approve a fresh plan after deployment inputs are persisted.
