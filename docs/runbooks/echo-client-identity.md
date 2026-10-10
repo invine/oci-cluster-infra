@@ -72,18 +72,25 @@ The source port is not `X-Forwarded-Port` (normally the destination port 443).
 
 The first staging attempt failed: F5 rejected
 `nginx.org/proxy-set-headers` because `$` is invalid in that annotation's
-literal header values, and removed the echo virtual server. The live Deployment
-already runs `v0.0.4` with trusted-header consumption because the earlier full
-Argo sync bypassed Ingress-first staging. Before resuming this feature rollout,
-restore the previous `v0.0.3` Deployment without `TRUSTED_PROXY_CIDRS`, verify
-it is ready, and then restore the accepted Ingress at the same reviewed recovery
-revision. That recovery is a separate production operation and is not authorized
-by this runbook or the local correction. The corrected
-Ingress uses `nginx.org/location-snippets`, which accepts the NGINX variables
+literal header values, and removed the echo virtual server. At that time, the
+live Deployment ran `v0.0.4` with trusted-header consumption because the earlier
+full Argo sync bypassed Ingress-first staging. On 2026-10-10, after the owner
+authorized deployment, Argo restored the `v0.0.3` Deployment without
+`TRUSTED_PROXY_CIDRS` before restoring the accepted Ingress at chart revision
+`365afe364c8ca151057db026beac93b5a2f5bedc`. Public echo service resumed.
+The corrected Ingress uses `nginx.org/location-snippets`, which accepts the NGINX variables
 in raw `proxy_set_header` directives. F5 disables snippets by default. They
 grant Ingress authors access to raw NGINX configuration and a bad snippet can
 prevent shared controller reloads, so review Ingress write access and the exact
 snippet before enabling them. [F5 snippet behavior](https://docs.nginx.com/nginx-ingress-controller/configuration/ingress-resources/advanced-configuration-with-snippets/)
+
+The owner then authorized the separate F5 snippets Terraform change and Argo
+stage. The saved Terraform plan was applied, all four controller pods became
+ready, and echo Ingress then Deployment were synced at chart revision
+`4639d6677ae81ca47eb52ecf72c1ac5cbba68986`. The restricted evidence is
+`/private/tmp/echo-id-deploy-evidence/staging-2026-10-10.md`. The procedure
+below remains the required sequence for a future replay, not an authorization
+to apply the separate OCI PROXY cutover.
 
 First persist `nginx_ingress_snippets_enabled = true` in the protected
 `platform.tfvars`, keeping `nginx_proxy_protocol_enabled = false`. Generate and

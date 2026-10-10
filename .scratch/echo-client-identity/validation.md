@@ -12,13 +12,16 @@ Terraform formatting and validation, and `nginx -t` with the cached F5 5.5.4
 image passed for the corrected directives. Rendering the cached F5 chart 2.6.4
 with the captured baseline values and then `controller.enableSnippets=true`
 changed only `-enable-snippets=false` to `-enable-snippets=true` in the
-DaemonSet argument list; the Service manifest remained identical. Controller
-acceptance and generated
-configuration on every ready pod remain a mandatory live staging gate after
-explicit authorization; no production change was made for this correction.
+DaemonSet argument list; the Service manifest remained identical. That live
+staging gate later passed at chart revision
+`4639d6677ae81ca47eb52ecf72c1ac5cbba68986`: all four ready F5 pods
+generated exactly one of each dedicated header overwrite, and the app rolled
+out afterward through Argo CD. The restricted deployment record is
+`/private/tmp/echo-id-deploy-evidence/staging-2026-10-10.md`. OCI PROXY
+activation remains separate and has not been applied.
 
-Implementation preparation passed the following checks. Nothing was published
-or applied to production.
+The original implementation preparation passed the following checks. Its
+publication and later staging are recorded separately above.
 
 | Check | Result |
 | --- | --- |

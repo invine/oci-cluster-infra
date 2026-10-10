@@ -5,9 +5,12 @@
 required staging sequence. F5 rejected its `proxy-set-headers` annotation and
 removed the echo route. Its release record below remains historical evidence;
 do not use that chart revision for another sync or the PROXY cutover. The
-corrected chart and separate F5 snippet capability require a new reviewed
-release and staged authorization. The owner requested no production changes
-while the correction is prepared locally.
+corrected chart and separate F5 snippet capability required a new reviewed
+release and staged authorization. The owner subsequently authorized deployment
+through Terraform and Argo CD. Chart revision
+`4639d6677ae81ca47eb52ecf72c1ac5cbba68986` was staged Ingress first,
+then Deployment, after F5 snippets were enabled. OCI PROXY remains disabled;
+see `/private/tmp/echo-id-deploy-evidence/staging-2026-10-10.md`.
 
 Prepared and publication-verified 2026-10-10 for ticket
 [04](issues/04-publish-verified-echo-release.md). Publication and the chart
