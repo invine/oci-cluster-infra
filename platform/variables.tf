@@ -131,6 +131,26 @@ variable "nginx_ingress_version" {
   }
 }
 
+variable "nginx_proxy_protocol_enabled" {
+  description = "Enable OCI PROXY protocol v2 and matching F5 listeners together. One-way on an existing OCI LB: setting false is NOT rollback. See docs/runbooks/echo-client-identity.md."
+  type        = bool
+  default     = false
+}
+
+variable "nginx_lb_trusted_cidrs" {
+  description = "Explicit OCI LB source subnet CIDRs trusted by F5 real-IP processing. Never use a public catch-all."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition = alltrue([
+      for cidr in var.nginx_lb_trusted_cidrs :
+      can(cidrhost(cidr, 0)) && !can(regex("/0+$", cidr))
+    ])
+    error_message = "nginx_lb_trusted_cidrs must contain valid CIDRs with a nonzero prefix length."
+  }
+}
+
 variable "velero_version" {
   description = "Exact Velero Helm chart version for the current frozen serial upgrade stage."
   type        = string

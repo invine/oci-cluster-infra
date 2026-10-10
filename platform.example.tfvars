@@ -21,6 +21,12 @@ longhorn_version = "1.7.2"
 # substitute stages: 1.4.0 -> 1.4.2 -> 2.0.1 -> 2.6.4.
 nginx_ingress_version = "1.4.0"
 
+# After qualifying chart 2.6.4, use the coordinated maintenance procedure in
+# docs/runbooks/echo-client-identity.md. Do not disable after activation on an
+# existing OCI LB; deleting the annotation does not disable PROXY protocol.
+nginx_proxy_protocol_enabled = false
+nginx_lb_trusted_cidrs       = [] # Verified LB subnet, e.g. ["10.0.8.0/24"].
+
 # Velero advances one reviewed Terraform apply at a time, after applying the
 # matching CRDs: 7.2.2 -> 8.7.2 -> 10.1.3 -> 11.4.0 -> 12.1.0.
 velero_version = "7.2.2"
