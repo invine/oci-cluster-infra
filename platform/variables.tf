@@ -137,6 +137,12 @@ variable "nginx_proxy_protocol_enabled" {
   default     = false
 }
 
+variable "nginx_ingress_snippets_enabled" {
+  description = "Enable F5 Ingress snippets for echo's PROXY-derived upstream headers before syncing the echo Ingress. Review all authors of Ingress resources before enabling."
+  type        = bool
+  default     = false
+}
+
 variable "nginx_lb_trusted_cidrs" {
   description = "Explicit OCI LB source subnet CIDRs trusted by F5 real-IP processing. Never use a public catch-all."
   type        = list(string)

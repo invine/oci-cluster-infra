@@ -1,5 +1,22 @@
 # Validation: 2026-10-10
 
+## Correction after live controller rejection
+
+The original Helm render and isolated NGINX test did not validate F5's Ingress
+annotation parser. During ticket 05, the live controller rejected the
+`nginx.org/proxy-set-headers` values containing `$` and removed the echo route.
+Those earlier chart checks are superseded. The local correction uses F5's
+`nginx.org/location-snippets` annotation and a separately enabled
+`controller.enableSnippets` setting. Helm lint and enabled/default renders,
+Terraform formatting and validation, and `nginx -t` with the cached F5 5.5.4
+image passed for the corrected directives. Rendering the cached F5 chart 2.6.4
+with the captured baseline values and then `controller.enableSnippets=true`
+changed only `-enable-snippets=false` to `-enable-snippets=true` in the
+DaemonSet argument list; the Service manifest remained identical. Controller
+acceptance and generated
+configuration on every ready pod remain a mandatory live staging gate after
+explicit authorization; no production change was made for this correction.
+
 Implementation preparation passed the following checks. Nothing was published
 or applied to production.
 

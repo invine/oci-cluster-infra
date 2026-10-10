@@ -144,9 +144,12 @@ requires them.
   not hard-coded assumptions inside the application.
 - **Ingress-to-app interface:** overwrite `X-Echo-Client-IP` from
   `$proxy_protocol_addr` and `X-Echo-Client-Port` from `$proxy_protocol_port`
-  through the F5 proxy-header annotation. Empty transport metadata must remove
-  these headers, including caller-supplied values. Verify the generated
-  configuration on every ready ingress instance.
+  through the F5 `nginx.org/location-snippets` annotation. The F5
+  `nginx.org/proxy-set-headers` validator rejects `$` in a header value and
+  removed the echo route during the first staging attempt. Enable F5 snippets
+  through a separate reviewed controller change before syncing this Ingress.
+  Empty transport metadata must remove these headers, including caller-supplied
+  values. Verify the generated configuration on every ready ingress instance.
 - **Application trust interface:** `TRUSTED_PROXY_CIDRS` is a comma-separated
   list of explicitly trusted immediate-peer networks. The default trusts no
   forwarded identity. Invalid prefixes and catch-all trust are rejected rather
@@ -178,9 +181,11 @@ requires them.
   Linux ARM64 availability before merging or synchronizing the deployment pin.
   If the tag is occupied by another release, choose and review a new tag rather
   than overwriting it.
-- **Argo sequencing:** after the Bootstrap Seed reconciles the reviewed child
-  declaration, selectively sync echo's Ingress first. Confirm NGINX accepts and
-  installs both header replacements before syncing the Deployment. Both stages
+- **Argo sequencing:** first enable F5 snippets through a reviewed Terraform
+  plan while OCI PROXY remains disabled, and verify all ready controller pods.
+  After the Bootstrap Seed reconciles the reviewed child declaration,
+  selectively sync echo's Ingress first. Confirm NGINX accepts and installs
+  both header replacements before syncing the Deployment. Both Argo stages
   must use the same reviewed chart revision. Before PROXY activation, forged
   headers must yield no authoritative client fields.
 - **Platform rollout:** capture actual listeners, health-check behavior,

@@ -15,7 +15,7 @@ Review the concrete release and full plan before executing the steps below.
 | Hop | Identity source and trust |
 | --- | --- |
 | OCI LB → F5 | PROXY protocol v2; F5 trusts the verified LB source subnet(s), currently `10.0.8.0/24`. |
-| F5 → echo | `X-Echo-Client-IP: $proxy_protocol_addr` and `X-Echo-Client-Port: $proxy_protocol_port`, overwritten by F5 for every echo request. Empty metadata removes the headers. |
+| F5 → echo | The echo Ingress's `nginx.org/location-snippets` installs `proxy_set_header X-Echo-Client-IP $proxy_protocol_addr;` and the matching port directive. Empty metadata removes the headers. |
 | echo | Accept these dedicated headers only from an immediate peer in `TRUSTED_PROXY_CIDRS`, currently `10.0.4.0/22`. |
 
 These private CIDRs trust all internal callers in those networks. They do not
@@ -36,8 +36,11 @@ The source port is not `X-Forwarded-Port` (normally the destination port 443).
    Run `go test -race ./...` and `go vet ./...` in the echo source repository.
    Publish its reviewed commit as `ghcr.io/invine/echo:v0.0.4` using the existing
    release workflow. Verify the registry digest and `linux/arm64` availability
-   before merging the active Application's new image pin. This task has not
-   created or pushed that tag. If that tag is already used for another release,
+   before merging the active Application's new image pin. The reviewed `v0.0.4`
+   tag was published at source commit `81bc06dfb5081b748f33adc1f5b01b939e06b60d`
+   and the Linux ARM64 manifest digest is
+   `sha256:5dfc2d5be2f1f23748c9d3ed4bf4403a61e835481bf343a2fa971e8f16a150ca`.
+   If that tag is already used for another release,
    select a new immutable tag and update the reviewed pin; never overwrite it.
 2. Capture Service UID, ClusterIP, ports/NodePorts, external IP, selectors,
    EndpointSlices, Helm/chart/controller versions and existing Helm values.
@@ -67,6 +70,30 @@ The source port is not `X-Forwarded-Port` (normally the destination port 443).
 
 ## Install header overwrites before trusting them
 
+The first staging attempt failed: F5 rejected
+`nginx.org/proxy-set-headers` because `$` is invalid in that annotation's
+literal header values, and removed the echo virtual server. The live Deployment
+already runs `v0.0.4` with trusted-header consumption because the earlier full
+Argo sync bypassed Ingress-first staging. Before resuming this feature rollout,
+restore the previous `v0.0.3` Deployment without `TRUSTED_PROXY_CIDRS`, verify
+it is ready, and then restore the accepted Ingress at the same reviewed recovery
+revision. That recovery is a separate production operation and is not authorized
+by this runbook or the local correction. The corrected
+Ingress uses `nginx.org/location-snippets`, which accepts the NGINX variables
+in raw `proxy_set_header` directives. F5 disables snippets by default. They
+grant Ingress authors access to raw NGINX configuration and a bad snippet can
+prevent shared controller reloads, so review Ingress write access and the exact
+snippet before enabling them. [F5 snippet behavior](https://docs.nginx.com/nginx-ingress-controller/configuration/ingress-resources/advanced-configuration-with-snippets/)
+
+First persist `nginx_ingress_snippets_enabled = true` in the protected
+`platform.tfvars`, keeping `nginx_proxy_protocol_enabled = false`. Generate and
+review a fresh full Terraform plan. The intended change is an in-place F5
+controller Helm update adding `controller.enableSnippets: true`; there must be
+no LB Service replacement, PROXY annotation, DNS action or unrelated change.
+Obtain approval for that exact plan before applying it. Verify all ready F5
+pods run with `-enable-snippets` and that the existing shared-route baseline
+still passes. This prerequisite must complete before the echo Ingress sync.
+
 The Bootstrap Seed syncs automatically; the echo child Application is manually
 synchronized. After the reviewed image and chart changes are published, resolve
 and record the exact chart Git commit. Use that same revision for both syncs;
@@ -83,7 +110,8 @@ argocd app sync echo-app --revision "$CHART_REVISION" \
 On every ready ingress pod, inspect `nginx -T` and the echo virtual server. It
 must contain exactly the two dedicated `proxy_set_header` directives in the
 contract, with no duplicate or inherited override. Check controller events for
-annotation validation/reload errors. The Ingress having an external IP does not
+snippet validation/reload errors. Confirm the echo virtual server remains
+present and the public route works. The Ingress having an external IP does not
 prove that NGINX accepted the annotation.
 
 Only after this check, sync the full echo Application at the same revision and
@@ -107,6 +135,7 @@ applied deployment: future full plans must retain the same settings.
 
 ```hcl
 nginx_ingress_version        = "2.6.4"
+nginx_ingress_snippets_enabled = true
 nginx_proxy_protocol_enabled = true
 nginx_lb_trusted_cidrs        = ["10.0.8.0/24"]
 ```
@@ -214,6 +243,6 @@ the LB sending PROXY bytes to NGINX listeners that no longer accept them.
 
 - [Oracle OKE PROXY protocol configuration and persistent listener setting](https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengconfiguringloadbalancersnetworkloadbalancers-subtopic.htm)
 - [F5 native ConfigMap parameters](https://docs.nginx.com/nginx-ingress-controller/configuration/global-configuration/configmap-resource/)
-- [F5 proxy header annotation](https://docs.nginx.com/nginx-ingress-controller/configuration/ingress-resources/advanced-configuration-with-annotations/)
+- [F5 snippet annotation](https://docs.nginx.com/nginx-ingress-controller/configuration/ingress-resources/advanced-configuration-with-snippets/)
 - [NGINX real-IP module](https://nginx.org/en/docs/http/ngx_http_realip_module.html)
 - [Argo CD selective resource sync](https://argo-cd.readthedocs.io/en/stable/user-guide/commands/argocd_app_sync/)

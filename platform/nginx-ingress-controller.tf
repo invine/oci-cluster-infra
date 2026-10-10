@@ -48,7 +48,11 @@ resource "helm_release" "nginx_ingress" {
     logLevel: ${startswith(var.nginx_ingress_version, "1.") ? 1 : "info"}
     logFormat: glog
   EOF
-    ], var.nginx_proxy_protocol_enabled ? [yamlencode({
+    ], var.nginx_ingress_snippets_enabled ? [yamlencode({
+      controller = {
+        enableSnippets = true
+      }
+      })] : [], var.nginx_proxy_protocol_enabled ? [yamlencode({
       controller = {
         service = {
           externalTrafficPolicy = "Local"
@@ -69,8 +73,13 @@ resource "helm_release" "nginx_ingress" {
 
   lifecycle {
     precondition {
-      condition     = !var.nginx_proxy_protocol_enabled || (var.nginx_ingress_version == "2.6.4" && length(var.nginx_lb_trusted_cidrs) > 0)
-      error_message = "Client identity requires the qualified F5 chart 2.6.4 and explicit LB source CIDRs. Follow docs/runbooks/echo-client-identity.md."
+      condition     = !var.nginx_ingress_snippets_enabled || var.nginx_ingress_version == "2.6.4"
+      error_message = "Echo client identity snippets require the qualified F5 chart 2.6.4."
+    }
+
+    precondition {
+      condition     = !var.nginx_proxy_protocol_enabled || (var.nginx_ingress_version == "2.6.4" && var.nginx_ingress_snippets_enabled && length(var.nginx_lb_trusted_cidrs) > 0)
+      error_message = "Client identity requires F5 chart 2.6.4, enabled snippets and explicit LB source CIDRs. Follow docs/runbooks/echo-client-identity.md."
     }
   }
 }

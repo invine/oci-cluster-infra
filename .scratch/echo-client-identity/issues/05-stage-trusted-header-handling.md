@@ -16,6 +16,11 @@ identity.
 - [ ] Confirm shared LB PROXY activation has not already occurred. If the
   observed protocol state differs from the expected starting state, reconcile
   the staging plan against Live State before proceeding.
+- [ ] Before staging the corrected Ingress, enable F5 snippets through a
+  separately reviewed Terraform plan with LB PROXY still disabled. Confirm
+  every ready controller has `-enable-snippets` and the shared-route baseline
+  passes. Review who can write Ingress resources because snippets contain raw
+  NGINX directives.
 - [ ] Resolve the reviewed chart commit and keep both sync stages bound to that
   same revision. Verify the Bootstrap Seed's child declaration identifies the
   intended release without automatically synchronizing the workload.
@@ -55,3 +60,12 @@ values. A public HTTPS echo request failed during TLS handshake with
 continue to LB PROXY activation. Private evidence is in restricted
 `/private/tmp/echo-id-05-evidence/`. The exact sync sequence and annotation
 contract need repair and requalification before this ticket can resolve.
+
+2026-10-10: Root cause confirmed against F5 documentation and the live
+rejection. `nginx.org/proxy-set-headers` accepts literal header values, so it
+cannot carry `$proxy_protocol_addr` or `$proxy_protocol_port`. A local chart
+correction uses `nginx.org/location-snippets` for the two NGINX
+`proxy_set_header` directives and adds a default-off Terraform switch for
+F5's required `-enable-snippets` capability. This is local preparation only.
+The owner explicitly requested that production remain unchanged while the fix
+is developed; the recovery commit has not been pushed or synced.

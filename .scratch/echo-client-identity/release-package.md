@@ -1,5 +1,14 @@
 # Echo client identity: release package
 
+**Superseded for deployment.** The published chart revision
+`d256b1860ea751f6a3e28d2662007cb19f96af50` was synchronized outside the
+required staging sequence. F5 rejected its `proxy-set-headers` annotation and
+removed the echo route. Its release record below remains historical evidence;
+do not use that chart revision for another sync or the PROXY cutover. The
+corrected chart and separate F5 snippet capability require a new reviewed
+release and staged authorization. The owner requested no production changes
+while the correction is prepared locally.
+
 Prepared and publication-verified 2026-10-10 for ticket
 [04](issues/04-publish-verified-echo-release.md). Publication and the chart
 merge were authorized and completed. This record does not authorize
@@ -11,7 +20,7 @@ Argo sync, Terraform apply, DNS/Service changes or production cutover.
 | --- | --- | --- |
 | Echo source | `81bc06dfb5081b748f33adc1f5b01b939e06b60d` | Qualified by ticket 02; published as remote `main` and peeled annotated tag `v0.0.4`. |
 | Echo image | `ghcr.io/invine/echo:v0.0.4` | Published; registry digest `sha256:5dfc2d5be2f1f23748c9d3ed4bf4403a61e835481bf343a2fa971e8f16a150ca`, `linux/arm64`. |
-| Chart and active root child Application | `d256b1860ea751f6a3e28d2662007cb19f96af50` | Published as chart remote `main`; this exact commit is the revision for both later Argo syncs. |
+| Chart and active root child Application | `d256b1860ea751f6a3e28d2662007cb19f96af50` | Published as chart remote `main`; invalid for further rollout because F5 rejected its Ingress. |
 | Infrastructure | `bd312798976011b2a4d9727dda73c0e3c864df9f` | Ticket 02 qualification evidence and rollout runbook; platform activation remains separate. |
 
 The existing echo release workflow is `.github/workflows/build-and-push.yaml`.
@@ -67,10 +76,11 @@ the reviewed `v0.0.4` tag and the digest is the registry identity for release
 verification. Recheck tag-to-digest mapping before rollout; do not overwrite
 the tag or silently accept a changed digest.
 
-The **published** chart Git SHA is
-`d256b1860ea751f6a3e28d2662007cb19f96af50`. Use that exact revision in
-both Argo sync commands; neither command should use moving `main` during the
-rollout. The root child Application tracks `main` but is manually synchronized.
+The **original published** chart Git SHA is
+`d256b1860ea751f6a3e28d2662007cb19f96af50`. It is retained here for
+audit only and must not be used for further rollout. A corrected chart revision
+must be reviewed and fixed for both Argo stages; neither command should use
+moving `main`. The root child Application tracks `main` but is manually synchronized.
 Bootstrap Seed reconciliation updates its declaration only; it cannot itself
 sync echo's Ingress or Deployment, and it cannot enable Terraform's shared LB
 PROXY setting.
