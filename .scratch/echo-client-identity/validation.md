@@ -86,8 +86,9 @@ public identity. A controlled curl source port `55040` was logged as
 passed for Argo CD, echo, Vaultwarden and relay portal; the relay WSS root
 retained its baseline 404, HTTP port 80 redirected all five hosts with 301,
 and WebSocket Upgrade returned 101. No ACME
-HTTP-01 challenge was active. Authenticated post-cutover checks are pending
-owner confirmation.
+HTTP-01 challenge was active. The owner reported all four authenticated
+post-cutover checks passed: Argo CD and Vaultwarden reads, relay portal login,
+and an application-level relay WebSocket exchange.
 
 The ingress code uses the agreed trust of internal subnet callers; this is not
 an authenticated identity guarantee against compromised internal workloads.

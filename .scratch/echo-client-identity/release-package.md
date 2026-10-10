@@ -1,6 +1,6 @@
 # Echo client identity: release package
 
-**Superseded for deployment.** The published chart revision
+**Historical release record; current deployment accepted.** The published chart revision
 `d256b1860ea751f6a3e28d2662007cb19f96af50` was synchronized outside the
 required staging sequence. F5 rejected its `proxy-set-headers` annotation and
 removed the echo route. Its release record below remains historical evidence;
@@ -9,8 +9,11 @@ corrected chart and separate F5 snippet capability required a new reviewed
 release and staged authorization. The owner subsequently authorized deployment
 through Terraform and Argo CD. Chart revision
 `4639d6677ae81ca47eb52ecf72c1ac5cbba68986` was staged Ingress first,
-then Deployment, after F5 snippets were enabled. OCI PROXY remains disabled;
-see `/private/tmp/echo-id-deploy-evidence/staging-2026-10-10.md`.
+then Deployment, after F5 snippets were enabled. The separately authorized
+Terraform cutover enabled OCI/F5 PROXY v2, and production acceptance passed.
+See [validation](validation.md) and ticket 06 for the current state; the
+staging-only record is
+`/private/tmp/echo-id-deploy-evidence/staging-2026-10-10.md`.
 
 Prepared and publication-verified 2026-10-10 for ticket
 [04](issues/04-publish-verified-echo-release.md). Publication and the chart

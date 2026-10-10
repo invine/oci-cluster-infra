@@ -7,7 +7,7 @@ recorded baseline after the maintenance cutover.
 
 **Blocked by:** 05 — Stage echo's trusted-header handling safely.
 
-**Status:** claimed
+**Status:** resolved
 
 - [x] Reconfirm ticket 05's staged release and the readiness/recovery package
   inherited from ticket 03. Refresh any changed configuration, Live State,
@@ -39,18 +39,18 @@ recorded baseline after the maintenance cutover.
   boundary where feasible and record any verification limit. Port absence must
   not prevent acceptance of an otherwise correct client IP; never infer a port
   that the transport metadata did not provide.
-- [ ] Pass the full recorded HTTP, TLS, authentication, websocket and relevant
+- [x] Pass the full recorded HTTP, TLS, authentication, websocket and relevant
   ACME baseline for every shared-ingress endpoint. Healthy pods or a successful
   Helm operation alone do not satisfy acceptance.
-- [ ] If acceptance fails, follow the reviewed recovery route while keeping
+- [x] If acceptance fails, follow the reviewed recovery route while keeping
   LB and NGINX protocols aligned. An echo-only rollback must not disable the
   shared PROXY configuration. Any necessary Service/LB replacement and DNS
   update requires its own concrete reviewed authorization and post-recovery checks.
-- [ ] Record all results and the resulting Live State, keeping sensitive
+- [x] Record all results and the resulting Live State, keeping sensitive
   evidence private. Declare this ticket complete only when public identity and
   all shared-endpoint gates pass. If recovered to a functioning state without
   client identity, record the recovery and leave the feature incomplete.
-- [ ] Hand the acceptance evidence to the owner of the existing rollout handoff.
+- [x] Hand the acceptance evidence to the owner of the existing rollout handoff.
   Do not modify or close the parent specification or overall handoff ticket as
   part of this child ticket.
 
@@ -72,3 +72,19 @@ HTTP, TLS and WebSocket Upgrade baseline passes; no ACME challenge is active.
 The authenticated post-cutover shared-route checks are pending the owner's
 report. Restricted evidence is in
 `/private/tmp/echo-id-deploy-evidence/cutover-2026-10-10.md`.
+
+2026-10-10: The owner reported all four authenticated post-cutover checks
+passed: Argo CD read, Vaultwarden read, relay portal login and an
+application-level relay WebSocket exchange. No ACME challenge was active.
+The recovery condition did not arise, so no recovery mutation was performed.
+The private acceptance record above is the handoff to the sole owner.
+
+## Answer
+
+Public client identity is live through Terraform-managed OCI/F5 PROXY v2 and
+Argo-managed echo `v0.0.4`. The public source IP, source port, request-log
+paths, spoof resistance and all shared-route baselines passed. The ingress
+Service UID and public IP were preserved, and a post-apply full Terraform plan
+reported no changes. Detailed evidence is in
+`/private/tmp/echo-id-deploy-evidence/cutover-2026-10-10.md` and
+`../validation.md`.

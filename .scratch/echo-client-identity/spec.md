@@ -1,10 +1,10 @@
 # Echo client identity
 
-Status: ready-for-agent
+Status: resolved
 
-Design confirmed: 2026-10-10. This specification synthesizes the confirmed
-design, prepared implementation and rollout runbook. Readiness describes the
-specification; it does not authorize publishing or production mutations.
+Design confirmed: 2026-10-10. Implementation and production acceptance
+completed: 2026-10-10. Publication and production mutations were separately
+authorized by the owner during execution.
 
 ## Problem Statement
 
@@ -263,8 +263,8 @@ requires them.
   should not be copied into this feature.
 - **Verification scope:** Go tests with the race detector, static checks, the
   ARM64 build, Helm validation and the isolated proxy test have already passed
-  during preparation. Preserve that evidence and rerun relevant checks when
-  code or configuration changes. Production acceptance remains outstanding.
+  during preparation. Production checks after the authorized rollout are
+  recorded in [validation](validation.md) and ticket 06.
 
 ## Out of Scope
 
@@ -293,18 +293,14 @@ log fields, shared-ingress scope, planned maintenance, replacement-IP recovery,
 internal trust boundary and missing-metadata fallback. This specification
 records those decisions without reopening the interview.
 
-Implementation has been prepared locally across the echo source, application
-charts and Terraform configuration. No production resource was changed during
-that preparation. The preview platform plan showed zero additions, one in-place
-update and zero deletions; it used temporary activation overrides. Activation
-is not yet persisted in the local deployment settings, and the new image was
-not published by this work.
-
-Remaining execution consists of reviewing/publishing the immutable release,
-verifying actual OCI listeners and trust ranges, performing the staged Argo
-syncs, generating and approving a fresh full platform plan, and passing the
-production acceptance checks during the agreed maintenance window. Local
-success must not be reported as a completed production fix.
+Preparation was followed by separately authorized publication and deployment.
+Echo source `v0.0.4` was published as a verified Linux ARM64 image. The original
+chart revision was rejected by F5 because its annotation did not accept NGINX
+variables; the corrected revision was staged Ingress first, then Deployment,
+through Argo CD. Terraform then applied the reviewed shared PROXY v2 cutover.
+Public identity, spoof resistance, response behavior and shared routes passed
+the recorded acceptance checks. The owner confirmed the four authenticated
+post-cutover application checks. See ticket 06 for live state and evidence.
 
 - [Rollout and recovery runbook](../../docs/runbooks/echo-client-identity.md)
 - [Recorded local validation](validation.md)
@@ -312,7 +308,5 @@ success must not be reported as a completed production fix.
 - [Shared Platform Service and Application Workload ownership ADR](../../docs/adr/0001-terraform-platform-argo-workloads.md)
 - [Exclusive Terraform ownership of OCI security lists ADR](../../docs/adr/0005-terraform-owns-oci-security-lists.md)
 
-The separate release/rollout handoff remains `ready-for-human` because it
-contains outstanding production authorization. This spec's `ready-for-agent`
-status records a complete, actionable specification rather than changing that
-authorization boundary.
+The separate release/rollout handoff is resolved after the authorized
+production acceptance.
