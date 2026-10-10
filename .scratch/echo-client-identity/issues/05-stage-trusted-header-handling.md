@@ -8,7 +8,7 @@ identity.
 
 **Blocked by:** 03 — Qualify shared-ingress cutover and recovery; 04 — Publish a verified echo release.
 
-**Status:** claimed
+**Status:** resolved
 
 - [x] Review the verified release, trusted networks and Live State readiness
   evidence from the blockers. Obtain authorization for the exact staged Argo
@@ -37,7 +37,7 @@ identity.
   and ordinary forwarding headers before PROXY activation. Verify authoritative
   client fields are absent, `remoteAddr` is preserved and the responses remain
   unchanged. Retained raw diagnostic headers are not treated as authoritative.
-- [ ] Verify the baseline echo GET, POST and ping behavior and check that the
+- [x] Verify the baseline echo GET, POST and ping behavior and check that the
   staging change did not regress the affected shared-ingress routes.
 - [x] Record the exact deployed revision, generated-configuration evidence and
   request/log results for ticket 06. Do not enable LB PROXY protocol, apply
@@ -86,3 +86,16 @@ WebSocket Upgrade returned 101. Owner authenticated post-stage checks are
 pending, so the shared-route checklist item and this ticket remain open.
 Restricted detailed evidence is in
 `/private/tmp/echo-id-deploy-evidence/staging-2026-10-10.md`.
+
+2026-10-10: The owner reported that authenticated Argo CD and Vaultwarden
+reads, relay portal login, and an application-level relay WebSocket exchange
+all passed after the corrected staging rollout. The recorded public HTTP, TLS,
+echo response, and WebSocket Upgrade checks also passed.
+
+## Answer
+
+Corrected Ingress and echo `v0.0.4` are staged through Argo CD at
+`4639d6677ae81ca47eb52ecf72c1ac5cbba68986`. Terraform enabled F5 snippets;
+all four controllers accepted the generated dedicated header replacements.
+The owner-reported authenticated shared-route checks pass. OCI LB PROXY remains
+disabled at this ticket boundary; activation belongs to ticket 06.

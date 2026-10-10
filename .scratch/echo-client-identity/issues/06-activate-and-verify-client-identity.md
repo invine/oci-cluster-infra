@@ -7,34 +7,34 @@ recorded baseline after the maintenance cutover.
 
 **Blocked by:** 05 — Stage echo's trusted-header handling safely.
 
-**Status:** ready-for-agent
+**Status:** claimed
 
-- [ ] Reconfirm ticket 05's staged release and the readiness/recovery package
+- [x] Reconfirm ticket 05's staged release and the readiness/recovery package
   inherited from ticket 03. Refresh any changed configuration, Live State,
   endpoint baseline, trust ranges or release evidence before planning activation.
-- [ ] Persist the reviewed qualified controller version, PROXY enablement and
+- [x] Persist the reviewed qualified controller version, PROXY enablement and
   explicit LB trust settings in the existing protected deployment configuration,
   preserving unrelated values. Future full plans must retain the enabled state.
-- [ ] Generate a fresh full saved Terraform plan, without targeting resources.
+- [x] Generate a fresh full saved Terraform plan, without targeting resources.
   Require only the intended in-place ingress Helm update and dependent reads.
   Inspect rendered differences and reject unrelated changes, Explicit Secret
   changes, Service replacement, normal-path public-IP change or DNS action.
-- [ ] Present the exact plan checksum, image digest, chart/source revisions,
+- [x] Present the exact plan checksum, image digest, chart/source revisions,
   baseline, maintenance window and recovery procedure for approval. Obtain
   explicit execution authorization before applying the saved plan; ticket
   readiness does not authorize production activation.
-- [ ] Apply during the approved maintenance window through Terraform ownership.
+- [x] Apply during the approved maintenance window through Terraform ownership.
   Verify every OCI listener and ready NGINX instance agrees on PROXY v2 before
   considering traffic restored. Check LB backends, reload errors, Service
   identity/public IP, ready endpoints and dedicated health checks.
-- [ ] From an external client with an independently known public source, send
+- [x] From an external client with an independently known public source, send
   labelled GET, POST, ping, missing-message and invalid-JSON requests. Verify
   the established responses and log levels, correct `clientIp`, and retained
   ingress-connection `remoteAddr` for every existing request-log path.
-- [ ] Verify public caller-supplied identity and forwarding headers, including
+- [x] Verify public caller-supplied identity and forwarding headers, including
   duplicates, cannot override the authoritative client fields. Neither the LB
   private address nor the ingress pod IP may be reported as the public client.
-- [ ] When `clientPort` is present, verify it is valid source-port metadata rather
+- [x] When `clientPort` is present, verify it is valid source-port metadata rather
   than a destination port. Corroborate it at a controlled public-client/edge
   boundary where feasible and record any verification limit. Port absence must
   not prevent acceptance of an otherwise correct client IP; never infer a port
@@ -53,3 +53,22 @@ recorded baseline after the maintenance cutover.
 - [ ] Hand the acceptance evidence to the owner of the existing rollout handoff.
   Do not modify or close the parent specification or overall handoff ticket as
   part of this child ticket.
+
+## Comments
+
+2026-10-10: The owner authorized completion of the shared PROXY cutover and
+reported all four authenticated post-stage checks passed. The protected local
+Terraform configuration now persists chart 2.6.4, snippets, PROXY enablement
+and OCI LB CIDR `10.0.8.0/24`. A fresh full saved plan, SHA-256
+`b8cdd462d9ca7854360a25fdf9ebfd686f0bbea52756979ff506777a61e59832`,
+showed only one in-place ingress Helm update and a dependent Service read.
+Terraform applied that exact plan: 0 added, 1 changed, 0 destroyed. Both OCI
+listeners now send PROXY v2; all four ready F5 pods parse it; two backend sets
+are healthy; ingress Service UID and public IP are unchanged. Public labelled
+GET, POST, ping and warning requests log the independently observed public IP,
+retain ingress `remoteAddr`, and resist forged duplicate identity headers. A
+controlled client source port `55040` matched the logged `clientPort`. Public
+HTTP, TLS and WebSocket Upgrade baseline passes; no ACME challenge is active.
+The authenticated post-cutover shared-route checks are pending the owner's
+report. Restricted evidence is in
+`/private/tmp/echo-id-deploy-evidence/cutover-2026-10-10.md`.

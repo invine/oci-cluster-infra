@@ -16,9 +16,8 @@ DaemonSet argument list; the Service manifest remained identical. That live
 staging gate later passed at chart revision
 `4639d6677ae81ca47eb52ecf72c1ac5cbba68986`: all four ready F5 pods
 generated exactly one of each dedicated header overwrite, and the app rolled
-out afterward through Argo CD. The restricted deployment record is
-`/private/tmp/echo-id-deploy-evidence/staging-2026-10-10.md`. OCI PROXY
-activation remains separate and has not been applied.
+out afterward through Argo CD. The restricted staging record is
+`/private/tmp/echo-id-deploy-evidence/staging-2026-10-10.md`.
 
 The original implementation preparation passed the following checks. Its
 publication and later staging are recorded separately above.
@@ -46,20 +45,49 @@ protocol/header behavior, not the OCI controller's production reconciliation.
 The private preview plan is `evidence/platform.tfplan`, SHA-256
 `12c79a7e1faca83237d5cd4d8d8a7dbca2b05a6f98666d9f79b6affedcfdd45e`.
 It was generated with explicit enable/CIDR command-line overrides. Local
-`platform.tfvars` remains unchanged. The later validation-only tightening of
-the zero-length-CIDR check does not change these rendered values. Regenerate a
-fresh full plan after persisting approved settings and completing release and
-live preflight; this preview is not deployment approval.
+`platform.tfvars` was unchanged at that stage. The later validation-only
+tightening of the zero-length-CIDR check does not change these rendered values.
+The preview was not used for deployment.
 
-## Outstanding live checks
+## Live activation
 
-- Publish and verify the reviewed echo `v0.0.4` image and chart revision.
-- Inspect actual OCI listener/backend/health-check configuration and confirm
-  source CIDRs against Live State.
-- Verify F5 accepts the Ingress annotation on every instance before enabling
-  the app's header consumption.
-- Execute the separately approved maintenance rollout and verify public source
-  identity, spoof resistance, optional source port and all shared endpoints.
+Echo `v0.0.4` is running as Linux ARM64 image digest
+`sha256:5dfc2d5be2f1f23748c9d3ed4bf4403a61e835481bf343a2fa971e8f16a150ca`.
+Argo CD reports `echo-app` Synced/Healthy at chart revision
+`4639d6677ae81ca47eb52ecf72c1ac5cbba68986`.
+
+The owner authorized the shared PROXY cutover after reporting all four
+authenticated post-stage checks passed. The existing protected `platform.tfvars`
+now persists `nginx_proxy_protocol_enabled=true` and
+`nginx_lb_trusted_cidrs=["10.0.8.0/24"]` while retaining F5 chart 2.6.4 and
+snippets. The fresh, full saved plan checksum is
+`b8cdd462d9ca7854360a25fdf9ebfd686f0bbea52756979ff506777a61e59832`.
+It proposed only one in-place `helm_release.nginx_ingress` update and a
+dependent Service read, with 0 adds and 0 destroys. Terraform applied that
+exact plan successfully.
+A subsequent full plan with the persisted values returned no changes.
+
+Both OCI listeners report backend PROXY version 2. All four F5 pods are ready;
+each generated configuration contains PROXY listeners, the private LB trust
+range and exactly two dedicated echo header overwrites. The ingress Service
+retains UID `58c1cac1-b701-4351-8c20-bacf827ce3a0` and public IP
+`130.162.161.246`. Both OCI backend sets report OK and the Service has four
+ready endpoints. F5 logs show each ConfigMap update without error. OCI emitted
+one transient concurrent-operation Service warning during reconciliation; its
+final state is ACTIVE and healthy.
+
+An independent public-IP lookup returned `87.200.19.111`; labelled public GET,
+POST, ping, missing-message and invalid-JSON requests all returned their
+expected bodies and logged `clientIp=87.200.19.111`, valid `clientPort`, and
+the ingress connection in `remoteAddr`. A request with duplicate forged
+dedicated headers and forged ordinary forwarding headers logged the true
+public identity. A controlled curl source port `55040` was logged as
+`clientPort=55040`, distinct from destination port 443. Public TLS/HTTP checks
+passed for Argo CD, echo, Vaultwarden and relay portal; the relay WSS root
+retained its baseline 404, HTTP port 80 redirected all five hosts with 301,
+and WebSocket Upgrade returned 101. No ACME
+HTTP-01 challenge was active. Authenticated post-cutover checks are pending
+owner confirmation.
 
 The ingress code uses the agreed trust of internal subnet callers; this is not
 an authenticated identity guarantee against compromised internal workloads.
