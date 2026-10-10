@@ -8,7 +8,7 @@ identity.
 
 **Blocked by:** 03 — Qualify shared-ingress cutover and recovery; 04 — Publish a verified echo release.
 
-**Status:** ready-for-agent
+**Status:** claimed
 
 - [ ] Review the verified release, trusted networks and Live State readiness
   evidence from the blockers. Obtain authorization for the exact staged Argo
@@ -37,3 +37,21 @@ identity.
 - [ ] Record the exact deployed revision, generated-configuration evidence and
   request/log results for ticket 06. Do not enable LB PROXY protocol, apply
   platform changes or update DNS in this ticket.
+
+## Comments
+
+2026-10-10: Read-only preflight found that `echo-app` had already been fully
+synchronized by Argo CD user `admin` at 13:47:18–13:47:19 UTC to chart commit
+`d256b1860ea751f6a3e28d2662007cb19f96af50`. The operation included the
+Ingress and Deployment together, so the required Ingress-first verification
+gate was bypassed. The Deployment is ready with `ghcr.io/invine/echo:v0.0.4`
+and `TRUSTED_PROXY_CIDRS=10.0.4.0/22`. The shared ingress Service has no
+PROXY-v2 annotation; its UID and public IP still match ticket 03. All four
+ready F5 pods' generated `nginx -T` output omits the echo virtual server.
+Ingress events explain why: F5 rejects the `nginx.org/proxy-set-headers`
+annotation because `$` is an invalid character in both proposed header
+values. A public HTTPS echo request failed during TLS handshake with
+`unrecognized name` and HTTP 000. This is an active echo-route outage; do not
+continue to LB PROXY activation. Private evidence is in restricted
+`/private/tmp/echo-id-05-evidence/`. The exact sync sequence and annotation
+contract need repair and requalification before this ticket can resolve.
