@@ -45,9 +45,12 @@ The source port is not `X-Forwarded-Port` (normally the destination port 443).
    this feature activation with an ingress version upgrade.
 3. Inspect actual OCI listeners, backend sets, backend health and LB subnet(s).
    Verify TCP listeners forward TLS to NGINX and no other intermediary changes
-   the public source before OCI. Confirm source CIDRs against Live State. The
-   initial investigation inspected Kubernetes and generated NGINX configuration,
-   not the actual OCI listener configuration. Stop on a mismatch.
+   the public source before OCI. Confirm source CIDRs against live state. A
+   preliminary read-only inspection on 2026-10-10 found TCP listeners on 80
+   and 443 forwarding to their matching backend sets, with backend PROXY
+   disabled; it found no separately configured public intermediary in the
+   inspected path. This is a baseline, not activation approval. Recheck the
+   live configuration before cutover and stop on a mismatch.
 4. Record all served hostnames and their expected HTTP/TLS/authentication and
    websocket behavior. Include Argo CD, echo, Vaultwarden, relay portal/WSS and
    any additional live Ingress or F5 routing resource. Verify this baseline
