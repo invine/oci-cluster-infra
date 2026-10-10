@@ -8,7 +8,7 @@ the cluster.
 
 **Blocked by:** 02 — Qualify the complete client-identity path.
 
-**Status:** ready-for-agent
+**Status:** claimed
 
 - [ ] Use the source qualified by ticket 02 and identify the exact release
   commit. Review the concrete publication and merge actions and obtain execution
@@ -33,3 +33,13 @@ the cluster.
   declaring the release ready.
 - [ ] Do not synchronize the echo workload, apply platform changes or perform
   DNS/Service mutations as part of this ticket.
+
+## Preparation, 2026-10-10
+
+The reviewed, local release candidate is documented in
+[the release package](../release-package.md). Source and chart checks passed,
+but `v0.0.4` has not been published or verified in GHCR. The chart change has
+not been merged or published, and its final remote commit has not been recorded.
+The publication/merge actions require separate execution authorization. Keep
+this ticket open until the registry digest, ARM64 platform and exact chart
+revision are verified and recorded.
